@@ -1,0 +1,51 @@
+{
+  "slug": "invoice-pdfs-to-csv",
+  "title": "Stop paying $800/month to copy invoice data (10 lines of Python)",
+  "hook_text": "Stop paying $800/mo for data entry",
+  "description": "A 10-line Python script that pulls the total out of every PDF invoice in a folder and writes them all to one CSV. Works on text-based PDFs; scanned ones need OCR first.",
+  "tags": [
+    "python",
+    "automation",
+    "pdf",
+    "small business",
+    "pandas"
+  ],
+  "code": "import csv, re, glob\nfrom pypdf import PdfReader\n\nrows = []\nfor f in glob.glob(\"invoices/*.pdf\"):\n    t = PdfReader(f).pages[0].extract_text()\n    m = re.search(r\"Total\\D*([\\d,.]+)\", t)\n    rows.append([f, m and m.group(1)])\nwith open(\"totals.csv\", \"w\") as o:\n    csv.writer(o).writerows(rows)",
+  "beats": [
+    {
+      "voice": "Say you pay someone eight hundred dollars a month to do exactly that: copy invoice totals into a spreadsheet. That's nine thousand six hundred dollars a year.",
+      "reveal": 0,
+      "badge": "$800/mo = $9,600/yr",
+      "output": ""
+    },
+    {
+      "voice": "Here's the whole fix in ten lines of Python. It opens every PDF in a folder.",
+      "reveal": 5,
+      "badge": "",
+      "output": ""
+    },
+    {
+      "voice": "It reads the first page, then hunts for the word Total followed by a number.",
+      "reveal": 7,
+      "badge": "",
+      "output": ""
+    },
+    {
+      "voice": "Then it writes every filename and total into one CSV file.",
+      "reveal": 10,
+      "badge": "",
+      "output": "wrote totals.csv"
+    },
+    {
+      "voice": "It only works on text PDFs, scans need OCR first. Comment CODE and I'll send the full script, because nobody should be typing this by hand.",
+      "reveal": 10,
+      "badge": "Comment CODE",
+      "output": ""
+    }
+  ],
+  "pillar": "Extract data from PDFs or text files you own with a short script",
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"Extract invoice totals from text-based PDFs into one CSV.\n\nUsage:\n    python tool.py invoices/ totals.csv\n\"\"\"\nimport argparse\nimport csv\nimport logging\nimport re\nfrom pathlib import Path\n\nfrom pypdf import PdfReader\n\n# Matches \"Total: $1,234.56\" but not \"Subtotal\". Adjust to your invoice layout.\nTOTAL_RE = re.compile(r\"\\bTotal\\b\\D*([\\d,]+\\.?\\d*)\", re.IGNORECASE)\n\n\ndef extract_total(pdf_path):\n    \"\"\"Return the first 'Total ...' amount found in the PDF, or None.\"\"\"\n    reader = PdfReader(pdf_path)\n    for page in reader.pages:\n        text = page.extract_text() or \"\"\n        match = TOTAL_RE.search(text)\n        if match:\n            return match.group(1).replace(\",\", \"\")\n    return None\n\n\ndef main():\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument(\"folder\", type=Path, help=\"folder containing the PDF invoices\")\n    parser.add_argument(\"output\", type=Path, help=\"CSV file to write\")\n    args = parser.parse_args()\n\n    logging.basicConfig(level=logging.INFO, format=\"%(message)s\")\n    rows, missing = [], 0\n    for pdf in sorted(args.folder.glob(\"*.pdf\")):\n        try:\n            total = extract_total(pdf)\n        except Exception as exc:  # corrupt or encrypted file\n            logging.warning(\"skipped %s: %s\", pdf.name, exc)\n            continue\n        if total is None:\n            missing += 1\n            logging.warning(\"no total found in %s (scanned PDF?)\", pdf.name)\n        rows.append([pdf.name, total or \"\"])\n\n    with args.output.open(\"w\", newline=\"\") as fh:\n        writer = csv.writer(fh)\n        writer.writerow([\"file\", \"total\"])\n        writer.writerows(rows)\n    logging.info(\"wrote %d rows (%d without a total)\", len(rows), missing)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "product_name": "PDF Invoice Totals to CSV: Script Kit",
+  "product_blurb": "A command-line Python tool that reads every text-based PDF invoice in a folder, pulls out the total, and writes one CSV. Logs any file it can't read, skips Subtotal lines, and ships with a setup guide and tips for adapting the pattern to your invoice layout.",
+  "kit_readme": "SETUP\n1. Install Python 3.9 or newer.\n2. In a terminal: pip install pypdf\n3. Put your PDF invoices in a folder, for example invoices/\n4. Run: python tool.py invoices/ totals.csv\n5. Open totals.csv in Excel or Google Sheets.\n\nHOW IT WORKS\nThe script opens each PDF, reads the text on every page, and looks for the word \"Total\" followed by a number. The first match is saved. Lines that say \"Subtotal\" are ignored on purpose.\n\nADAPTING IT\n- If your invoices say \"Amount Due\" or \"Balance\", change TOTAL_RE near the top of tool.py.\n- If the total is not on the first match (for example a \"Total quantity\" line comes first), make the pattern more specific.\n- To pull other fields (invoice number, date), copy extract_total and change the pattern.\n\nLIMITATIONS\n- Works on PDFs that contain real text. Scanned images need OCR first (for example with the free Tesseract tool) before this script can read them.\n- Layouts vary a lot between suppliers. Always spot-check a sample of rows against the original PDFs before relying on the output.\n- Run it on a COPY of your files first. It only reads PDFs and writes the CSV you name, but check the output path before running.\n\nSUPPORT\nNo warranty. Use at your own risk and keep your own backups."
+}

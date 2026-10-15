@@ -1,0 +1,49 @@
+channel:
+  name: CodeToCapital
+  handle: "@codetocapital"
+  tagline: "Code. Automate. Save Thousands."
+  # Public GitHub repo where each Short's free core code is published (the "comment CODE" link).
+  # Format: owner/repo  -> snippets live in snippets/<slug>.py on the main branch.
+  github_repo: "lebatieshameel23/codetocapital"
+
+# Optional paid product. The pipeline builds a ready-to-list kit (zip + listing text) for every video.
+# Leave url empty until your store exists; once set it appears in descriptions and comment replies.
+store:
+  name: "CodeToCapital Kits"
+  url: ""
+  price_usd: 7
+
+timezone: Africa/Johannesburg
+
+schedule:
+  slots: ["12:00", "18:00"]   # local times. Add a third slot (e.g. "07:30") for 3 Shorts a day.
+  days_ahead: 1               # each daily run schedules this many days ahead
+  queue_buffer: 4             # keep at least this many extra scripts in the queue
+
+ai:
+  model: claude-sonnet-5-5    # used by generate_scripts.py (needs ANTHROPIC_API_KEY)
+
+voice:
+  name: en-US-GuyNeural       # free Microsoft Edge neural voice via edge-tts
+  rate: "+12%"                # fast, punchy delivery
+
+# Retention features
+motion: true                  # punch-in on each beat
+sfx: true                     # synthesised typing clicks, whooshes, success ding
+
+# Optional: royalty-free .mp3 files you have the rights to in assets/music/ are mixed in quietly.
+music_volume: 0.07
+
+# Content pillars. The analytics loop re-weights these toward whatever holds viewers longest.
+pillars:
+  - "Automate a boring spreadsheet or CSV task with Python"
+  - "Extract data from PDFs or text files you own with a short script"
+  - "Rename, sort or clean up hundreds of files in one command"
+  - "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)"
+  - "Use an AI/LLM API call to classify, summarise or tag messy text"
+  - "Build a formatted Excel report from raw data with pandas and openpyxl"
+  - "Spot duplicates or errors in business data with a few lines of pandas"
+  - "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes"
+  - "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet"
+  - "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)"
+  - "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first"
