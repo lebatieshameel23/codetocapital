@@ -20,8 +20,16 @@ schedule:
   days_ahead: 1               # each daily run schedules this many days ahead
   queue_buffer: 4             # keep at least this many extra scripts in the queue
 
+# Free LLM providers, tried in this order; only those with a key (GitHub secret) are used.
+# If one is rate limited or out of daily quota the next one takes over.
 ai:
-  model: claude-sonnet-5-5    # used by generate_scripts.py (needs ANTHROPIC_API_KEY)
+  order: [gemini, groq, openrouter, anthropic]
+  # Model ids change over time. If a provider logs "HTTP 404 ... model", edit its model here.
+  providers:
+    - {name: gemini,     model: gemini-3.8-flash}        # free key: aistudio.google.com/apikey
+    - {name: groq,       model: openai/gpt-oss-120b}     # free key: console.groq.com
+    - {name: openrouter, model: openrouter/free}         # free key: openrouter.ai/keys (last resort)
+    - {name: anthropic,  model: claude-sonnet-5-5}       # optional, paid
 
 voice:
   name: en-US-GuyNeural       # free Microsoft Edge neural voice via edge-tts

@@ -1,10 +1,10 @@
-"""Generate Short scripts (plus the paid kit for each) with Claude and queue the valid ones.
+"""Generate Short scripts (plus the paid kit for each) with a free LLM and queue the valid ones.
 
 Pillars are picked by performance weight (see analytics_loop.py), so topics that hold viewers
 longer get made more often, while every pillar keeps a minimum share so the channel keeps exploring.
 
 Usage:
-    export ANTHROPIC_API_KEY=...
+    export GEMINI_API_KEY=...      # free key from aistudio.google.com (or GROQ_API_KEY, free)
     python generate_scripts.py --count 5
 """
 import argparse
@@ -14,8 +14,7 @@ import random
 import re
 import sys
 
-from anthropic import Anthropic
-
+import llm
 from common import (MAX_CODE_LINES, MAX_KIT_LINES, MAX_LINE_CHARS, QUEUE, load_config, load_history,
                     load_performance, queue_files, save_history, validate_script)
 
@@ -69,11 +68,7 @@ Reply with ONE JSON object and nothing else, with keys: slug (lowercase-hyphen),
 product_name, product_blurb."""
 
 
-def extract_json(text):
-    m = re.search(r"\{.*\}", text, re.S)
-    if not m:
-        raise ValueError("no JSON object in reply")
-    return json.loads(m.group(0))
+extract_json = llm.extract_json
 
 
 def choose_pillar(pillars, perf, rnd):
@@ -90,18 +85,17 @@ def guidance(perf):
     return out
 
 
-def generate_one(client, model, pillar, hook_style, avoid, perf, feedback=""):
+def generate_one(ai_cfg, pillar, hook_style, avoid, perf, feedback=""):
     user = (f"Content pillar: {pillar}\nHook style for this one: {hook_style}\n"
             f"Do not repeat or closely resemble these earlier titles: {avoid[-30:] or 'none yet'}\n"
             f"{guidance(perf)}{feedback}Write one new Short script now.")
-    resp = client.messages.create(model=model, max_tokens=6000, system=SYSTEM,
-                                  messages=[{"role": "user", "content": user}])
-    return extract_json(resp.content[0].text)
+    return extract_json(llm.complete(SYSTEM, user, max_tokens=6000, ai_cfg=ai_cfg))
 
 
 def generate_batch(count, quiet=False):
     cfg, perf, hist = load_config(), load_performance(), load_history()
-    client = Anthropic()
+    if not llm.available(cfg.get("ai")):
+        raise SystemExit("No LLM key set. Add GEMINI_API_KEY (free) or GROQ_API_KEY (free) - see README.")
     rnd = random.Random()
     counter = len(hist["used_titles"]) + len(queue_files())
     made = 0
@@ -111,7 +105,7 @@ def generate_batch(count, quiet=False):
         feedback, s = "", None
         for attempt in range(4):
             try:
-                s = generate_one(client, cfg["ai"]["model"], pillar, style, hist["used_titles"], perf, feedback)
+                s = generate_one(cfg.get("ai"), pillar, style, hist["used_titles"], perf, feedback)
                 problems = validate_script(s)
             except Exception as e:  # bad JSON, API hiccup...
                 problems, s = [f"could not parse reply: {e}"], None

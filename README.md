@@ -3,21 +3,32 @@
 Every day, with no manual steps after setup:
 
 ```
-analytics (what held viewers)  ->  Claude writes scripts + paid kit  ->  free voice (edge-tts)
+analytics (what held viewers)  ->  free LLM writes scripts + paid kit  ->  free voice (edge-tts)
    ->  video with sound effects, motion and loop ending  ->  scheduled YouTube upload (2 per day)
    ->  bot replies "CODE" comments  ->  product kit zip ready to list in your store
 ```
 
 See `GROWTH.md` for the monetisation reality check, the funnel, and what was deliberately left out.
 
-Runs for free on GitHub Actions. Costs: Anthropic API usage for script writing (a few cents a day).
+**Cost: $0.** Everything runs free:
+
+| Piece | Free service | Card needed? |
+|---|---|---|
+| Scheduling and rendering | GitHub Actions (free for public repos) | No |
+| Script writing | Google Gemini API free tier (key from aistudio.google.com/apikey); optional free backups: Groq, OpenRouter | No |
+| Voice | edge-tts (Microsoft Edge voices; unofficial, can break) | No |
+| Upload and analytics | YouTube Data / Analytics API | No |
+
+Paid Anthropic is still supported but optional: set `ANTHROPIC_API_KEY` and it is used as the last fallback.
+GitHub Models was retired on 30 July 2026, so it is not used.
 
 ## Files
 
 | File | Job |
 |---|---|
 | `config.yaml` | Channel name, slots (12:00 and 18:00 SAST), voice, model, content pillars |
-| `generate_scripts.py` | Claude writes scripts; each is validated (code must compile, length limits) |
+| `generate_scripts.py` | A free LLM writes scripts; each is validated (code must compile, length limits) |
+| `llm.py` | Free-LLM client: Gemini, Groq, OpenRouter, optional Anthropic, with automatic failover |
 | `voice.py` | Voiceover and word timings |
 | `render_video.py`, `sfx.py` | 1080x1920 video: typed code, captions, badges, sound effects, punch-ins, loop ending |
 | `analytics_loop.py` | Re-weights topics toward videos that held viewers and gained subscribers |
@@ -49,7 +60,8 @@ python render_video.py content/samples/episode-01.json   # same, with the real v
 Videos uploaded through the API by an unaudited project are forced to private and can't be scheduled public. Submit YouTube's API compliance audit form (search "YouTube API Services audit and quota extension form") and mention you're uploading your own channel's videos. Until it's approved, uploads still work but stay private; you can flip them public in YouTube Studio. Default API quota (10,000 units/day) is enough for 2 uploads a day.
 
 **5. GitHub secrets** (repo Settings > Secrets and variables > Actions):
-`ANTHROPIC_API_KEY`, `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`.
+`GEMINI_API_KEY` (free, from aistudio.google.com/apikey), `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`.
+Optional free backup keys: `GROQ_API_KEY` (console.groq.com), `OPENROUTER_API_KEY` (openrouter.ai/keys). Add one: if Gemini is rate limited, the pipeline switches to it.
 Also Settings > Actions > General > Workflow permissions: **Read and write**.
 
 **6. Optional: your store.** Create a Payhip, Gumroad or Shopify store. Each daily run publishes that day's kits (zip + listing text) as the `product-kits` artifact on the workflow run page. Upload them, then put your store link in `store.url` in `config.yaml`.
@@ -70,5 +82,8 @@ Also Settings > Actions > General > Workflow permissions: **Read and write**.
 ## Honest limits
 
 - Scheduling and replies run on GitHub's servers, so your computer can stay off.
-- I tested script validation, rendering (with sound effects), the analytics re-weighting, kit building and the whole daily run here, using stand-ins for the Anthropic, edge-tts and YouTube services and silent placeholder voice audio. The Anthropic, edge-tts and YouTube calls need your keys and network access, so the first live run is the real test: run the workflow by hand and check the first video in YouTube Studio before trusting the daily schedule.
+- I tested script validation, rendering (with sound effects), the analytics re-weighting, kit building and the whole daily run here, using local stand-in servers for the LLM providers and stand-ins for edge-tts and YouTube and silent placeholder voice audio. The real Gemini/Groq, edge-tts and YouTube calls need your keys and network access, so the first live run is the real test: run the workflow by hand and check the first video in YouTube Studio before trusting the daily schedule.
 - Review the first week of generated scripts. The validator checks that code compiles and fits the screen, not that it does what the narration claims.
+- Free-tier limits change without notice, and Google no longer publishes per-model numbers (see aistudio.google.com/rate-limit for yours). This pipeline needs only a handful of requests a day (about 2 scripts plus retries). If a model id stops working the log shows `HTTP 404`; edit the model name under `ai:` in `config.yaml`.
+- Free Gemini keys may let Google use prompts to improve its products. Nothing private is sent: only topic prompts.
+- Free models write weaker code than paid ones, which is why every script must compile and pass the limits before it is queued, and why reviewing the first week matters.

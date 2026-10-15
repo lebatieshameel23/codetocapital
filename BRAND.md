@@ -10,7 +10,7 @@
 | Manual CapCut captions | 5+ minutes per video. | Word-synced captions burned in automatically. |
 | Manual upload and posting | Daily chore. | Scheduled upload through the YouTube API, 2 per day. |
 | "Comment CODE" with no delivery | Someone has to reply by hand. | Each Short's code is published to `snippets/` on GitHub and a bot replies with the link. |
-| "Claude 3.5 Sonnet" | Outdated model. | `claude-sonnet-5-5` (change in `config.yaml`). |
+| A hard-coded, outdated AI model name | Models get retired. | Provider and model live in `config.yaml` (`ai:`), with a free default and automatic failover. |
 
 ## Identity
 
