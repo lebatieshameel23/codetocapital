@@ -7,7 +7,25 @@
     "Archive Newsletters Safely with Python IMAP",
     "Clean Inbox Newsletters with 9 Lines of Python"
   ],
-  "scheduled": {},
-  "videos": {},
+  "scheduled": {
+    "2026-10-18T12:00:00+02:00": "VYOCdjHthI0",
+    "2026-10-18T18:00:00+02:00": "l6B1EzvgQP0"
+  },
+  "videos": {
+    "VYOCdjHthI0": {
+      "slug": "reconcile-spreadsheets-pandas",
+      "title": "Stop Using VLOOKUP: Reconcile Spreadsheets in Python",
+      "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)",
+      "ep": 1,
+      "publishAt": "2026-10-18T10:00:00.000Z"
+    },
+    "l6B1EzvgQP0": {
+      "slug": "csv-batch-file-organizer",
+      "title": "Sort Hundreds of Files into Folders with 8 Lines of Python",
+      "pillar": "Rename, sort or clean up hundreds of files in one command",
+      "ep": 2,
+      "publishAt": "2026-10-18T16:00:00.000Z"
+    }
+  },
   "replied": []
 }

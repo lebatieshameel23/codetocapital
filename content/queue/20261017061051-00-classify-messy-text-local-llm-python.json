@@ -1,0 +1,52 @@
+{
+  "slug": "classify-messy-text-local-llm-python",
+  "title": "Classify Messy Text Fast with Python and Local AI",
+  "hook_text": "Myth: You need paid AI tools for this",
+  "description": "Stop paying recurring software subscriptions just to categorize messy customer feedback or tickets. Run a lightweight local model in eight lines of Python to tag messy text completely free.",
+  "tags": [
+    "python",
+    "localllm",
+    "automation",
+    "ollama",
+    "smallbusiness",
+    "developer"
+  ],
+  "code": "import requests\nurl = \"http://localhost:11434/api/generate\"\nfor t in [\"Refund order\", \"App crashes\"]:\n    p = f\"Classify as Bug or Billing: {t}\"\n    data = {\"model\":\"phi3\",\"prompt\":p,\n            \"stream\":False}\n    r = requests.post(url, json=data).json()\n    print(t, \"->\", r[\"response\"].strip())",
+  "beats": [
+    {
+      "voice": "You need paid software to classify messy customer tickets. That is completely false.",
+      "reveal": 2,
+      "badge": "BUSTING THE MYTH",
+      "output": ""
+    },
+    {
+      "voice": "Point eight lines of Python at a free, local model, and pass in your messy text.",
+      "reveal": 4,
+      "badge": "LOCAL INFERENCE",
+      "output": ""
+    },
+    {
+      "voice": "Send a quick prompt asking for category tags, and post it to your local port.",
+      "reveal": 7,
+      "badge": "ZERO API BILLS",
+      "output": ""
+    },
+    {
+      "voice": "Your tickets get tagged cleanly on your own machine with zero subscription fees.",
+      "reveal": 8,
+      "badge": "LOCAL RESULTS",
+      "output": "Refund order -> Billing"
+    },
+    {
+      "voice": "Local inference does require a modern processor to stay fast, but it saves hours when bosses say...",
+      "reveal": 8,
+      "badge": "NEEDS DECENT CPU",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Batch classify and tag messy text records using a local LLM.\n\nReads lines or CSV records, prompts a local Ollama instance for structured\nlabels, and outputs tagged rows without external API costs or data leakage.\n\"\"\"\n\nimport argparse\nimport csv\nimport json\nimport logging\nimport os\nimport sys\nimport urllib.error\nimport urllib.request\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%H:%M:%S\",\n)\n\n\ndef query_ollama(endpoint: str, model: str, prompt: str, timeout: int = 30) -> str:\n    payload = json.dumps({\n        \"model\": model,\n        \"prompt\": prompt,\n        \"stream\": False,\n    }).encode(\"utf-8\")\n\n    req = urllib.request.Request(\n        f\"{endpoint.rstrip('/')}/api/generate\",\n        data=payload,\n        headers={\"Content-Type\": \"application/json\"},\n    )\n    try:\n        with urllib.request.urlopen(req, timeout=timeout) as response:\n            data = json.loads(response.read().decode(\"utf-8\"))\n            return data.get(\"response\", \"\").strip()\n    except urllib.error.URLError as err:\n        logging.error(\"Connection to LLM endpoint failed: %s\", err)\n        return \"ERROR\"\n\n\ndef process_records(\n    input_path: str,\n    output_path: str,\n    column_name: str,\n    categories: list[str],\n    endpoint: str,\n    model: str,\n    dry_run: bool = False,\n) -> None:\n    if not os.path.exists(input_path):\n        logging.error(\"Input file not found: %s\", input_path)\n        sys.exit(1)\n\n    cat_prompt = \", \".join(categories)\n    results = []\n\n    with open(input_path, mode=\"r\", encoding=\"utf-8\", errors=\"replace\") as infile:\n        reader = csv.DictReader(infile)\n        fieldnames = reader.fieldnames or []\n        if column_name not in fieldnames:\n            logging.error(\"Column '%s' not present in %s\", column_name, fieldnames)\n            sys.exit(1)\n\n        out_fieldnames = list(fieldnames) + [\"predicted_tag\"]\n\n        for idx, row in enumerate(reader, start=1):\n            text = row.get(column_name, \"\").strip()\n            if not text:\n                row[\"predicted_tag\"] = \"EMPTY\"\n                results.append(row)\n                continue\n\n            prompt = (\n                f\"Classify this short text into exactly one of [{cat_prompt}]. \"\n                f\"Return ONLY the category name and nothing else.\\nText: {text}\"\n            )\n\n            if dry_run:\n                logging.info(\"[DRY-RUN] Row %d: '%s' -> (would query %s)\", idx, text[:40], model)\n                row[\"predicted_tag\"] = \"DRY_RUN\"\n            else:\n                tag = query_ollama(endpoint, model, prompt)\n                row[\"predicted_tag\"] = tag\n                logging.info(\"Row %d: '%s' -> %s\", idx, text[:40], tag)\n\n            results.append(row)\n\n    if dry_run:\n        logging.info(\"[DRY-RUN] Processed %d rows. Output file skipped.\", len(results))\n        return\n\n    with open(output_path, mode=\"w\", newline=\"\", encoding=\"utf-8\") as outfile:\n        writer = csv.DictWriter(outfile, fieldnames=out_fieldnames)\n        writer.writeheader()\n        writer.writerows(results)\n\n    logging.info(\"Wrote %d classified rows to %s\", len(results), output_path)\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"Classify text entries in a CSV file using a local Ollama model.\"\n    )\n    parser.add_argument(\"-i\", \"--input\", required=True, help=\"Path to source CSV file\")\n    parser.add_argument(\"-o\", \"--output\", default=\"classified.csv\", help=\"Output CSV path\")\n    parser.add_argument(\"-c\", \"--column\", default=\"text\", help=\"Column header to classify\")\n    parser.add_argument(\n        \"--categories\",\n        nargs=\"+\",\n        default=[\"Bug\", \"Billing\", \"Feature\", \"Other\"],\n        help=\"Allowed category tags\",\n    )\n    parser.add_argument(\"--model\", default=\"phi3\", help=\"Ollama model tag (default: phi3)\")\n    parser.add_argument(\"--endpoint\", default=\"http://localhost:11434\", help=\"Ollama base URL\")\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Inspect prompts and records without modifying files or querying LLM\",\n    )\n\n    args = parser.parse_args()\n    process_records(\n        input_path=args.input,\n        output_path=args.output,\n        column_name=args.column,\n        categories=args.categories,\n        endpoint=args.endpoint,\n        model=args.model,\n        dry_run=args.dry_run,\n    )\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "LOCAL TEXT CLASSIFIER KIT\n\nSETUP\n1. Ensure Python 3.10+ is installed. This script uses standard library modules only (urllib, csv, json, argparse).\n2. Install and launch Ollama on your machine from https://ollama.com\n3. Pull a small, fast instruction-following model in your terminal:\n   ollama pull phi3\n4. Verify your local Ollama server is running at http://localhost:11434.\n\nHOW IT WORKS\ntool.py reads any CSV containing unorganized or unstructured text (support tickets, review excerpts, survey responses). For each row, it builds a focused zero-shot classification prompt constrained to your specified label list, submits it to your local model via HTTP, and appends a 'predicted_tag' column to a clean output CSV.\n\nADAPTING IT\n- Run a dry-run first to preview data parsing:\n  python tool.py -i feedback.csv -c feedback_text --dry-run\n- Run full classification with custom tags:\n  python tool.py -i feedback.csv -o tagged.csv -c feedback_text --categories Bug Billing Inquiry Churn\n- Change the model to another local model (e.g., llama3:8b or mistral):\n  python tool.py -i feedback.csv --model llama3\n\nLIMITATIONS\n- Classification speed depends entirely on your local hardware (GPU/CPU). Expect roughly 0.5 to 2 seconds per record on standard consumer hardware.\n- Small models occasionally hallucinate words outside your specified category list; always validate a sample batch before trusting tags downstream.\n\nSUPPORT\nProvided as educational open-source software under the MIT license without warranty of any kind. You are responsible for local performance and prompt tuning.",
+  "product_name": "Local LLM Text Tagger Kit",
+  "product_blurb": "Categorize and tag messy customer feedback or tickets automatically using a local AI model on your own hardware. Keep your customer data private and eliminate recurring third-party API subscription costs.",
+  "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text"
+}
