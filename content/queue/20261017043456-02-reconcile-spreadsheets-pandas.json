@@ -1,0 +1,51 @@
+{
+  "slug": "reconcile-spreadsheets-pandas",
+  "title": "Match and Reconcile Spreadsheets Fast with Python",
+  "hook_text": "Reconcile Sheets in 1 Command",
+  "description": "Learn how to match orders against bank deposits automatically using a short pandas merge script. Replace manual spreadsheet lookups with a reliable one-command reconciliation workflow.",
+  "tags": [
+    "python",
+    "pandas",
+    "automation",
+    "excel",
+    "accounting"
+  ],
+  "code": "import pandas as pd\na = pd.read_csv(\"orders.csv\")\nb = pd.read_csv(\"bank.csv\")\nm = a.merge(b, on=\"id\", how=\"left\")\nm[\"diff\"] = m[\"total\"] - m[\"paid\"].fillna(0)\nm.to_csv(\"reconciled.csv\", index=False)\nunmatched = (m[\"diff\"] != 0).sum()\nprint(f\"Unmatched rows: {unmatched}\")",
+  "beats": [
+    {
+      "voice": "Cross-checking two spreadsheets can eat an hour every Friday. Here is how to make it a single command.",
+      "reveal": 1,
+      "badge": "No more VLOOKUP",
+      "output": ""
+    },
+    {
+      "voice": "Load your order export and bank statement with pandas, then merge them on a shared order ID.",
+      "reveal": 4,
+      "badge": "Merge on ID",
+      "output": ""
+    },
+    {
+      "voice": "Subtract payments from order totals to calculate discrepancies, replacing missing records with zero.",
+      "reveal": 5,
+      "badge": "Calculate Diff",
+      "output": ""
+    },
+    {
+      "voice": "Write out the reconciled file and print the exact count of discrepancies needing review.",
+      "reveal": 8,
+      "badge": "Payoff",
+      "output": "Unmatched rows: 3"
+    },
+    {
+      "voice": "This basic script expects exact string matches on IDs, saving hours of clicking whenever...",
+      "reveal": 8,
+      "badge": "Limitation",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Reconcile two CSV spreadsheets based on a shared key column.\n\"\"\"\n\nimport argparse\nimport logging\nimport sys\nfrom pathlib import Path\nimport pandas as pd\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(levelname)s: %(message)s\"\n)\nlogger = logging.getLogger(__name__)\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Reconcile two CSV files on a matching key column.\"\n    )\n    parser.add_argument(\n        \"--primary\",\n        required=True,\n        type=Path,\n        help=\"Path to primary CSV (e.g., orders.csv)\",\n    )\n    parser.add_argument(\n        \"--secondary\",\n        required=True,\n        type=Path,\n        help=\"Path to secondary CSV (e.g., bank.csv)\",\n    )\n    parser.add_argument(\n        \"--key\",\n        default=\"id\",\n        help=\"Shared key column name for joining (default: id)\",\n    )\n    parser.add_argument(\n        \"--col-primary\",\n        default=\"total\",\n        help=\"Value column from primary sheet (default: total)\",\n    )\n    parser.add_argument(\n        \"--col-secondary\",\n        default=\"paid\",\n        help=\"Value column from secondary sheet (default: paid)\",\n    )\n    parser.add_argument(\n        \"--output\",\n        default=Path(\"reconciled.csv\"),\n        type=Path,\n        help=\"Destination path for reconciled output CSV\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> int:\n    args = parse_args()\n\n    if not args.primary.exists():\n        logger.error(f\"Primary file not found: {args.primary}\")\n        return 1\n    if not args.secondary.exists():\n        logger.error(f\"Secondary file not found: {args.secondary}\")\n        return 1\n\n    try:\n        df_primary = pd.read_csv(args.primary)\n        df_secondary = pd.read_csv(args.secondary)\n    except Exception as exc:\n        logger.error(f\"Failed to read input files: {exc}\")\n        return 1\n\n    # Validate columns\n    for df, path, col in [\n        (df_primary, args.primary, args.col_primary),\n        (df_secondary, args.secondary, args.col_secondary),\n    ]:\n        if args.key not in df.columns:\n            logger.error(f\"Key column '{args.key}' missing in {path}\")\n            return 1\n        if col not in df.columns:\n            logger.error(f\"Value column '{col}' missing in {path}\")\n            return 1\n\n    # Normalize keys: strip whitespace and stringify to prevent mismatch\n    df_primary[args.key] = df_primary[args.key].astype(str).str.strip()\n    df_secondary[args.key] = df_secondary[args.key].astype(str).str.strip()\n\n    # Merge left\n    merged = df_primary.merge(\n        df_secondary,\n        on=args.key,\n        how=\"left\",\n        suffixes=[\"_primary\", \"_secondary\"]\n    )\n\n    col_prim_name = f\"{args.col_primary}_primary\" if args.col_primary == args.col_secondary else args.col_primary\n    col_sec_name = f\"{args.col_secondary}_secondary\" if args.col_primary == args.col_secondary else args.col_secondary\n\n    # Convert columns to numeric, filling non-numeric with 0\n    prim_vals = pd.to_numeric(merged[col_prim_name], errors=\"coerce\").fillna(0.0)\n    sec_vals = pd.to_numeric(merged[col_sec_name], errors=\"coerce\").fillna(0.0)\n\n    merged[\"reconcile_diff\"] = (prim_vals - sec_vals).round(2)\n    merged[\"is_matched\"] = merged[\"reconcile_diff\"] == 0.0\n\n    try:\n        merged.to_csv(args.output, index=False)\n    except Exception as exc:\n        logger.error(f\"Failed to write output to {args.output}: {exc}\")\n        return 1\n\n    unmatched_count = (~merged[\"is_matched\"]).sum()\n    logger.info(f\"Reconciliation complete. Total rows: {len(merged)}\")\n    logger.info(f\"Unmatched rows flagged: {unmatched_count}\")\n    logger.info(f\"Wrote report to {args.output}\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed.\n2. Install pandas:\n   pip install pandas\n\nHOW IT WORKS\ntool.py accepts two CSV files (e.g. an e-commerce order export and a settlement bank report) and merges them on a shared identifier column (like order number or transaction ID). It computes the difference between the primary amount and the secondary amount, flags all rows where the difference is not zero, and outputs a complete reconciled CSV.\n\nRun the command:\npython tool.py --primary orders.csv --secondary bank.csv --key order_id --col-primary total --col-secondary payout_amount\n\nADAPTING IT\n- To handle multiple transactions per key (e.g., split payments), aggregate the secondary CSV using df.groupby(args.key).sum() before merging.\n- To read Excel files directly (.xlsx), install openpyxl (`pip install openpyxl`) and replace pd.read_csv with pd.read_excel in tool.py.\n\nLIMITATIONS\n- Assumes unique identifiers in the primary dataset; duplicate IDs in the primary file will produce multiple joined rows.\n- Does not perform fuzzy string matching for typos in transaction IDs.\n\nSUPPORT\nSoftware is provided as-is without warranty of any kind. Verify accounting outputs on test data before relying on them for financial reporting.",
+  "product_name": "Spreadsheet Reconciler CLI Kit",
+  "product_blurb": "Automate routine invoice and bank statement matching from your terminal without manual lookup formulas. Generates discrepancy audits instantly using clean, configurable Python.",
+  "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)"
+}

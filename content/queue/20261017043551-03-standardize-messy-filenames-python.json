@@ -1,0 +1,52 @@
+{
+  "slug": "standardize-messy-filenames-python",
+  "title": "Batch Rename and Clean Messy Files in Python",
+  "hook_text": "Fix hundreds of messy filenames fast",
+  "description": "Clean and date-stamp messy filenames in bulk using Python's standard pathlib library. This quick script sanitizes spaces and standardizes document naming across entire folders.",
+  "tags": [
+    "python",
+    "automation",
+    "pathlib",
+    "filemanagement",
+    "smallbusiness",
+    "programming"
+  ],
+  "code": "from pathlib import Path\nfrom datetime import date\ntoday = str(date.today())\nfor p in Path(\"docs\").glob(\"*.pdf\"):\n    tag = p.stem.strip().replace(\" \", \"_\")\n    new = f\"{today}_{tag}.pdf\"\n    p.rename(p.with_name(new))\n    print(f\"Renamed: {new}\")",
+  "beats": [
+    {
+      "voice": "There is a built-in Python method that fixes messy filenames in seconds. Say you pay an assistant twenty dollars an hour to hand-label scanned receipts.",
+      "reveal": 3,
+      "badge": "Standard Library",
+      "output": ""
+    },
+    {
+      "voice": "Target your messy files using Path glob from the standard library.",
+      "reveal": 4,
+      "badge": "Find Files",
+      "output": ""
+    },
+    {
+      "voice": "Strip out broken whitespace and assemble your standardized naming format.",
+      "reveal": 6,
+      "badge": "Clean Strings",
+      "output": ""
+    },
+    {
+      "voice": "Run rename with with_name to update every file on disk instantly.",
+      "reveal": 8,
+      "badge": "Batch Rename",
+      "output": "Renamed: 2025-05-18_scan_01.pdf"
+    },
+    {
+      "voice": "One catch: standard rename can overwrite duplicates, so inspect your pattern first, because...",
+      "reveal": 8,
+      "badge": "Safe Automation",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Batch sanitize and rename files with safety checks and dry-run mode.\n\"\"\"\n\nimport argparse\nfrom datetime import date\nimport logging\nfrom pathlib import Path\nimport re\nimport sys\n\n\ndef sanitize_name(stem: str) -> str:\n    \"\"\"Replace whitespace and special characters with single underscores.\"\"\"\n    cleaned = re.sub(r\"[^a-zA-Z0-9_-]+\", \"_\", stem.strip())\n    return re.sub(r\"_+ \", \"_\", cleaned).strip(\"_\")\n\n\ndef rename_files(\n    folder: Path,\n    pattern: str,\n    add_date: bool,\n    dry_run: bool,\n    overwrite: bool\n) -> int:\n    if not folder.is_dir():\n        logging.error(\"Provided path is not a directory: %s\", folder)\n        return 1\n\n    files = sorted(folder.glob(pattern))\n    if not files:\n        logging.warning(\"No files matched '%s' in %s\", pattern, folder)\n        return 0\n\n    prefix = f\"{date.today().isoformat()}_\" if add_date else \"\"\n    renamed_count = 0\n    skipped_count = 0\n\n    for filepath in files:\n        if not filepath.is_file():\n            continue\n\n        clean_stem = sanitize_name(filepath.stem)\n        new_filename = f\"{prefix}{clean_stem}{filepath.suffix.lower()}\"\n        target_path = filepath.with_name(new_filename)\n\n        if target_path == filepath:\n            logging.debug(\"Already standardized: %s\", filepath.name)\n            continue\n\n        if target_path.exists() and not overwrite:\n            logging.warning(\n                \"Destination exists, skipping: %s -> %s\",\n                filepath.name,\n                new_filename\n            )\n            skipped_count += 1\n            continue\n\n        if dry_run:\n            logging.info(\"[DRY RUN] Would rename: %s -> %s\", filepath.name, new_filename)\n            renamed_count += 1\n        else:\n            try:\n                filepath.rename(target_path)\n                logging.info(\"Renamed: %s -> %s\", filepath.name, new_filename)\n                renamed_count += 1\n            except OSError as exc:\n                logging.error(\"Failed renaming %s: %s\", filepath.name, exc)\n                skipped_count += 1\n\n    status = \"Simulated\" if dry_run else \"Completed\"\n    logging.info(\"%s: %d renamed, %d skipped.\", status, renamed_count, skipped_count)\n    return 0\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"Clean and standardize file names across folders safely.\"\n    )\n    parser.add_argument(\n        \"folder\",\n        type=Path,\n        help=\"Path to directory containing files\"\n    )\n    parser.add_argument(\n        \"--pattern\",\n        default=\"*.*\",\n        help=\"Glob pattern to match (default: *.*)\"\n    )\n    parser.add_argument(\n        \"--date\",\n        action=\"store_true\",\n        help=\"Prefix filenames with current ISO date (YYYY-MM-DD)\"\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Preview planned renames without writing changes\"\n    )\n    parser.add_argument(\n        \"--overwrite\",\n        action=\"store_true\",\n        help=\"Allow overwriting existing files when name collisions happen\"\n    )\n    parser.add_argument(\n        \"--verbose\",\n        action=\"store_true\",\n        help=\"Display detailed debug output\"\n    )\n\n    args = parser.parse_args()\n\n    level = logging.DEBUG if args.verbose else logging.INFO\n    logging.basicConfig(format=\"%(levelname)s: %(message)s\", level=level)\n\n    sys.exit(\n        rename_files(\n            folder=args.folder,\n            pattern=args.pattern,\n            add_date=args.date,\n            dry_run=args.dry_run,\n            overwrite=args.overwrite\n        )\n    )\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\nPython 3.8+ is required. No external packages are necessary; the script relies solely on Python standard library modules (pathlib, argparse, logging, re).\n\nHOW IT WORKS\ntool.py cleans messy file names by removing invalid characters, collapsing multiple whitespace sections into clean underscores, lowercasing extensions, and optionally prepending an ISO date tag (YYYY-MM-DD).\nRun a safe dry run preview first:\n  python tool.py ./invoices --pattern \"*.pdf\" --date --dry-run\n\nTo execute actual renames:\n  python tool.py ./invoices --pattern \"*.pdf\" --date\n\nADAPTING IT\n- To enforce custom naming templates, edit the `sanitize_name` helper function or the `new_filename` variable inside `rename_files`.\n- To process multiple nested subfolders recursively, switch `folder.glob(pattern)` to `folder.rglob(pattern)`.\n- Use the `--pattern` argument to restrict execution to specific formats like `*.csv` or `*.jpg`.\n\nLIMITATIONS\n- The script runs on local file systems and local network drives; cloud sync directories (e.g. OneDrive, Dropbox) might lock files mid-sync and reject instant renames.\n- By default, the script skips existing target names to avoid data loss. Use `--overwrite` cautiously if filenames legitimately overlap.\n\nSUPPORT\nProvided as-is without warranty. Please run with `--dry-run` and create a quick backup before modifying critical business records.",
+  "product_name": "Batch File Standardizer CLI",
+  "product_blurb": "Clean up inconsistent downloads, receipts, and scans across local folders in seconds. Includes regex sanitization, collision guards, and dry-run safety modes.",
+  "pillar": "Rename, sort or clean up hundreds of files in one command"
+}

@@ -1,0 +1,52 @@
+{
+  "slug": "reconcile-spreadsheets-pandas",
+  "title": "Stop Using VLOOKUP: Reconcile Spreadsheets in Python",
+  "hook_text": "Stop paying $400/mo for manual VLOOKUP",
+  "description": "Replace hours of manual spreadsheet reconciliation with seven lines of Python and pandas. Learn how to automatically match invoices against bank statements without broken Excel formulas.",
+  "tags": [
+    "python",
+    "pandas",
+    "automation",
+    "smallbusiness",
+    "accounting",
+    "spreadsheets"
+  ],
+  "code": "import pandas as pd\ninv = pd.read_csv(\"invoices.csv\")\nbank = pd.read_csv(\"bank.csv\")\nm = inv.merge(bank, on=\"id\", how=\"left\")\nm[\"paid\"] = m[\"amount_y\"].notna()\nm.to_csv(\"reconciled.csv\", index=False)\nprint(f\"Reconciled {len(m)} rows\")",
+  "beats": [
+    {
+      "voice": "Say you pay someone four hundred dollars a month to match invoices against bank exports by hand.",
+      "reveal": 1,
+      "badge": "$400/mo manual work",
+      "output": ""
+    },
+    {
+      "voice": "Load both spreadsheets into pandas with two lines.",
+      "reveal": 3,
+      "badge": "read files",
+      "output": ""
+    },
+    {
+      "voice": "Merge on the common invoice ID using a left join to instantly map payments.",
+      "reveal": 4,
+      "badge": "merge on ID",
+      "output": ""
+    },
+    {
+      "voice": "Flag unpaid balances and export the final report in under a second.",
+      "reveal": 7,
+      "badge": "saved",
+      "output": "Reconciled 1420 rows"
+    },
+    {
+      "voice": "This needs exact ID formats across both sheets, but it wipes out hours of weekly copy-pasting—",
+      "reveal": 7,
+      "badge": "exact keys required",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"tool.py - Reconcile two spreadsheets using pandas.\"\"\"\n\nimport argparse\nimport logging\nfrom pathlib import Path\nimport pandas as pd\n\nlogging.basicConfig(level=logging.INFO, format=\"%(levelname)s: %(message)s\")\n\n\ndef load_table(path: Path) -> pd.DataFrame:\n    \"\"\"Load CSV or Excel file based on extension.\"\"\"\n    if not path.exists():\n        raise FileNotFoundError(f\"File not found: {path}\")\n    if path.suffix.lower() in [\".xlsx\", \".xls\"]:\n        return pd.read_excel(path)\n    return pd.read_csv(path)\n\n\ndef reconcile(\n    primary_path: Path,\n    secondary_path: Path,\n    output_path: Path,\n    key_col: str,\n    dry_run: bool = False,\n) -> None:\n    logging.info(\"Loading %s and %s...\", primary_path.name, secondary_path.name)\n    primary_df = load_table(primary_path)\n    secondary_df = load_table(secondary_path)\n\n    if key_col not in primary_df.columns:\n        raise ValueError(f\"Key column '{key_col}' missing from {primary_path.name}\")\n    if key_col not in secondary_df.columns:\n        raise ValueError(f\"Key column '{key_col}' missing from {secondary_path.name}\")\n\n    # Normalize join keys (strip whitespace, stringify)\n    primary_df[key_col] = primary_df[key_col].astype(str).str.strip()\n    secondary_df[key_col] = secondary_df[key_col].astype(str).str.strip()\n\n    merged = primary_df.merge(\n        secondary_df,\n        on=key_col,\n        how=\"left\",\n        suffixes=(\"_primary\", \"_secondary\"),\n        indicator=True,\n    )\n    merged[\"matched\"] = merged[\"_merge\"] == \"both\"\n    merged.drop(columns=[\"_merge\"], inplace=True)\n\n    matched_count = int(merged[\"matched\"].sum())\n    unmatched_count = len(merged) - matched_count\n\n    logging.info(\"Results: %d matched, %d unmatched.\", matched_count, unmatched_count)\n\n    if dry_run:\n        logging.info(\"Dry-run mode: no output file written.\")\n        return\n\n    output_path.parent.mkdir(parents=True, exist_ok=True)\n    if output_path.suffix.lower() in [\".xlsx\", \".xls\"]:\n        merged.to_excel(output_path, index=False)\n    else:\n        merged.to_csv(output_path, index=False)\n    logging.info(\"Wrote %d reconciled records to %s\", len(merged), output_path)\n\n\ndef main():\n    parser = argparse.ArgumentParser(\n        description=\"Reconcile and join two CSV or Excel spreadsheets on a common key.\"\n    )\n    parser.add_argument(\n        \"--primary\",\n        required=True,\n        type=Path,\n        help=\"Primary spreadsheet path (e.g., invoices.csv)\",\n    )\n    parser.add_argument(\n        \"--secondary\",\n        required=True,\n        type=Path,\n        help=\"Secondary spreadsheet path (e.g., bank.csv)\",\n    )\n    parser.add_argument(\n        \"--key\",\n        required=True,\n        help=\"Column name present in both files to join on\",\n    )\n    parser.add_argument(\n        \"--out\",\n        type=Path,\n        default=Path(\"reconciled_output.csv\"),\n        help=\"Destination path for reconciled output\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Simulate merge and print counts without writing file\",\n    )\n    args = parser.parse_args()\n\n    try:\n        reconcile(args.primary, args.secondary, args.out, args.key, args.dry_run)\n    except Exception as exc:\n        logging.error(\"Reconciliation failed: %s\", exc)\n        raise SystemExit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9+ is installed.\n2. Install required dependencies:\n   pip install pandas openpyxl\n\nHOW IT WORKS\ntool.py automates matching records between two spreadsheets (such as an accounts receivable list and a bank export). It loads both CSV or Excel files, strips whitespace from key identifiers, and executes an SQL-style left join on the chosen key column. An explicit 'matched' boolean column is added to immediately flag missing or unpaid entries.\n\nRun a dry-run test first:\npython tool.py --primary invoices.csv --secondary bank.csv --key id --dry-run\n\nGenerate your reconciled output file:\npython tool.py --primary invoices.csv --secondary bank.csv --key id --out reconciled.csv\n\nADAPTING IT\n- Custom column names: Pass whatever key links your records (e.g., --key \"InvoiceNumber\" or --key \"TransactionID\").\n- Excel outputs: Specify an .xlsx extension in --out (e.g., --out monthly_audit.xlsx) to produce a native Excel spreadsheet.\n- Inner joins: If you only want records that appear in both sources, change how=\"left\" to how=\"inner\" inside reconcile().\n\nLIMITATIONS\n- Exact matches only: This script normalizes strings and whitespace, but does not perform fuzzy text matching for misspellings or varying name conventions.\n- Duplicate keys: If the secondary file contains duplicate join keys, pandas will generate Cartesian matches for those keys. De-duplicate your secondary export first if one-to-one mapping is required.\n\nSUPPORT\nThis script is provided as-is under an MIT-style open license for operational automation without warranty of any kind.",
+  "product_name": "Spreadsheet Auto-Reconciler CLI",
+  "product_blurb": "A clean, command-line tool to automatically merge and reconcile invoices against bank records in seconds. Eliminates broken VLOOKUP formulas and exports audit-ready CSV or Excel files with full dry-run support.",
+  "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)"
+}

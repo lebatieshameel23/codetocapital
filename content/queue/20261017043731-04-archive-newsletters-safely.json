@@ -1,0 +1,52 @@
+{
+  "slug": "archive-newsletters-safely",
+  "title": "Archive Newsletters Safely with Python IMAP",
+  "hook_text": "Archive newsletters safely in Python",
+  "description": "Clean up promotional emails cluttering your inbox using Python and standard IMAP search headers. Includes a built-in dry-run check so you never touch real client correspondence by mistake.",
+  "tags": [
+    "python",
+    "automation",
+    "email",
+    "imap",
+    "productivity",
+    "coding"
+  ],
+  "code": "import imaplib; DRY_RUN = True\nm = imaplib.IMAP4_SSL(\"imap.mail.com\")\nm.login(\"user@mail.com\", \"pass\")\nm.select(\"INBOX\")\nq = 'HEADER List-Unsubscribe \"\"'\n_, [b] = m.search(None, q)\nids = b.split()\nprint(f\"Dry run: {len(ids)} to move\")\nif not DRY_RUN:\n    for i in ids: m.copy(i, \"Archive\")",
+  "beats": [
+    {
+      "voice": "Archive dozens of newsletter subscriptions automatically without risking a single client email.",
+      "reveal": 0,
+      "badge": "SAFE INBOX CLEANUP",
+      "output": "Dry run: 47 to move"
+    },
+    {
+      "voice": "Log into your mail server using IMAP and a dedicated app password.",
+      "reveal": 4,
+      "badge": "CONNECT SECURELY",
+      "output": ""
+    },
+    {
+      "voice": "Search specifically for the List-Unsubscribe header, which marketing blasts use but personal emails never have.",
+      "reveal": 7,
+      "badge": "FILTER HEADERS",
+      "output": ""
+    },
+    {
+      "voice": "Run it with dry run set to True first to confirm your count.",
+      "reveal": 8,
+      "badge": "DRY RUN FIRST",
+      "output": "Dry run: 47 to move"
+    },
+    {
+      "voice": "Flip the flag to move them. Provider folder names differ across hosts, so always verify your match before you...",
+      "reveal": 10,
+      "badge": "SAFETY LIMITATION",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"\ntool.py - Safely scan and archive promotional newsletters via IMAP.\n\nFinds messages containing the 'List-Unsubscribe' header and moves them\nto a specified destination folder with a mandatory dry-run default.\n\"\"\"\n\nimport argparse\nimport imaplib\nimport logging\nimport os\nimport sys\n\nlogging.basicConfig(level=logging.INFO, format=\"%(levelname)s: %(message)s\")\n\n\ndef parse_args():\n    parser = argparse.ArgumentParser(\n        description=\"Safely find and archive newsletters using IMAP.\"\n    )\n    parser.add_argument(\n        \"--host\",\n        default=os.getenv(\"IMAP_HOST\", \"imap.mail.com\"),\n        help=\"IMAP server hostname\",\n    )\n    parser.add_argument(\n        \"--user\",\n        default=os.getenv(\"IMAP_USER\"),\n        help=\"IMAP login email address\",\n    )\n    parser.add_argument(\n        \"--password\",\n        default=os.getenv(\"IMAP_PASSWORD\"),\n        help=\"IMAP app password or token\",\n    )\n    parser.add_argument(\n        \"--folder\",\n        default=\"INBOX\",\n        help=\"Source mailbox folder (default: INBOX)\",\n    )\n    parser.add_argument(\n        \"--dest\",\n        default=\"Archive\",\n        help=\"Destination mailbox folder (default: Archive)\",\n    )\n    parser.add_argument(\n        \"--execute\",\n        action=\"store_true\",\n        help=\"Move messages. Without this flag, tool.py runs in safe dry-run mode.\",\n    )\n    return parser.parse_args()\n\n\ndef main():\n    args = parse_args()\n    if not args.user or not args.password:\n        logging.error(\"IMAP credentials missing. Pass --user/--password or set env.\")\n        sys.exit(1)\n\n    try:\n        logging.info(\"Connecting to %s...\", args.host)\n        mail = imaplib.IMAP4_SSL(args.host)\n        mail.login(args.user, args.password)\n    except Exception as exc:\n        logging.error(\"Connection failed: %s\", exc)\n        sys.exit(1)\n\n    try:\n        status, _ = mail.select(args.folder)\n        if status != \"OK\":\n            logging.error(\"Could not select folder: %s\", args.folder)\n            sys.exit(1)\n\n        search_query = 'HEADER List-Unsubscribe \"\"'\n        status, data = mail.search(None, search_query)\n        if status != \"OK\" or not data[0]:\n            logging.info(\"No newsletters found in %s.\", args.folder)\n            mail.logout()\n            return\n\n        msg_ids = data[0].split()\n        count = len(msg_ids)\n        logging.info(\"Found %d newsletter(s) in %s.\", count, args.folder)\n\n        if not args.execute:\n            logging.info(\n                \"[DRY RUN] No messages moved. Pass --execute to archive to '%s'.\",\n                args.dest,\n            )\n            mail.logout()\n            return\n\n        moved = 0\n        for msg_id in msg_ids:\n            copy_res, _ = mail.copy(msg_id, args.dest)\n            if copy_res == \"OK\":\n                mail.store(msg_id, \"+FLAGS\", \"\\\\Deleted\")\n                moved += 1\n\n        mail.expunge()\n        logging.info(\"Successfully moved %d of %d messages to '%s'.\", moved, count, args.dest)\n        mail.logout()\n    except Exception as exc:\n        logging.error(\"Mailbox operation failed: %s\", exc)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n- Requires Python 3.8+ (no third-party packages needed; uses standard library imaplib).\n- Create an App Password in your email account security settings (do not use your main account password).\n- Configure credentials via command line arguments or environment variables:\n    export IMAP_HOST=\"imap.gmail.com\"\n    export IMAP_USER=\"you@example.com\"\n    export IMAP_PASSWORD=\"your-app-password\"\n\nHOW IT WORKS\nRun `python tool.py` to trigger a dry run. The script connects over SSL, queries the INBOX for the standard RFC 'List-Unsubscribe' header that bulk senders are required to include, and prints the exact number of matches.\nTo apply the changes and move messages to your destination folder, run:\n    python tool.py --execute\n\nADAPTING IT\n- Change folders: Pass `--folder \"INBOX\" --dest \"Promotions\"` to archive to a custom label.\n- Customize search: Edit `search_query` in `tool.py` to combine headers (e.g., target specific domains or older date ranges).\n\nLIMITATIONS\n- Folder paths vary across providers (e.g., Gmail uses \"[Gmail]/All Mail\" or \"[Gmail]/Trash\"). Ensure your destination folder exists on your server before executing.\n- Very large mailboxes with thousands of results should be batched to avoid IMAP session timeouts.\n\nSUPPORT\nProvided as-is with no warranty. Always inspect dry-run output before passing `--execute`.",
+  "product_name": "Safe IMAP Newsletter Archiver",
+  "product_blurb": "Safely identify and batch-archive promotional newsletter subscriptions from your inbox using standard IMAP headers. Features built-in dry-run verification so you can inspect matches before moving a single message.",
+  "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first"
+}

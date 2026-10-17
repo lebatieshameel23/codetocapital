@@ -1,0 +1,52 @@
+{
+  "slug": "clean-inbox-newsletters-python",
+  "title": "Clean Inbox Newsletters with 9 Lines of Python",
+  "hook_text": "You don't need paid inbox cleaners.",
+  "description": "Stop paying monthly fees to tidy marketing emails from your inbox. This lightweight Python script scans email headers and lets you preview newsletter matches safely before moving anything.",
+  "tags": [
+    "python automation",
+    "inbox zero",
+    "email management",
+    "imap python",
+    "office productivity",
+    "coding shorts"
+  ],
+  "code": "import imaplib\nm = imaplib.IMAP4_SSL(\"imap.gmail.com\")\nm.login(\"user@gmail.com\", \"app_pass\")\nm.select(\"INBOX\")\n_, ids = m.search(None, 'HEADER List-ID \"\"')\nfor uid in ids[0].split():\n    print(f\"Dry-run match: {uid.decode()}\")\nm.close()\nm.logout()",
+  "beats": [
+    {
+      "voice": "People say you need paid software to clean your messy inbox.",
+      "reveal": 3,
+      "badge": "Inbox cleaner myth",
+      "output": ""
+    },
+    {
+      "voice": "Python connects directly to your mail server over IMAP in three lines.",
+      "reveal": 4,
+      "badge": "Secure IMAP",
+      "output": ""
+    },
+    {
+      "voice": "It scans headers that newsletters and marketing blasts attach automatically.",
+      "reveal": 6,
+      "badge": "Find newsletters",
+      "output": ""
+    },
+    {
+      "voice": "This dry run previews matches safely without deleting or moving any message.",
+      "reveal": 7,
+      "badge": "Safe dry-run",
+      "output": "Dry-run match: 1042"
+    },
+    {
+      "voice": "Just use an app-specific password so your main account stays secure, especially when...",
+      "reveal": 9,
+      "badge": "App passwords only",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Safe Inbox Cleaner and Newsletter Archiver.\"\"\"\nimport argparse\nimport imaplib\nimport logging\nimport os\nimport sys\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n)\n\n\ndef connect_imap(server: str, user: str, password: str) -> imaplib.IMAP4_SSL:\n    \"\"\"Establish secure IMAP connection.\"\"\"\n    try:\n        client = imaplib.IMAP4_SSL(server)\n        client.login(user, password)\n        return client\n    except Exception as exc:\n        logging.error(\"IMAP authentication failed: %s\", exc)\n        sys.exit(1)\n\n\ndef scan_and_archive(\n    client: imaplib.IMAP4_SSL,\n    folder: str,\n    target_folder: str,\n    dry_run: bool,\n    limit: int,\n) -> None:\n    \"\"\"Scan for newsletters and preview or move them.\"\"\"\n    client.select(folder)\n    status, response = client.search(None, 'HEADER List-Unsubscribe \"\"')\n    if status != \"OK\":\n        logging.warning(\"IMAP search query failed.\")\n        return\n\n    msg_ids = response[0].split()\n    logging.info(\"Found %d newsletter candidate(s) in %s.\", len(msg_ids), folder)\n\n    to_process = msg_ids[:limit] if limit > 0 else msg_ids\n    moved_count = 0\n\n    for msg_id in to_process:\n        uid_str = msg_id.decode()\n        if dry_run:\n            logging.info(\"[DRY-RUN] Matched message UID: %s (no changes made)\", uid_str)\n        else:\n            try:\n                if target_folder:\n                    client.copy(msg_id, target_folder)\n                client.store(msg_id, \"+FLAGS\", \"\\\\Deleted\")\n                moved_count += 1\n                logging.info(\"Moved message UID %s to %s.\", uid_str, target_folder)\n            except Exception as err:\n                logging.error(\"Failed processing UID %s: %s\", uid_str, err)\n\n    if not dry_run and moved_count > 0:\n        client.expunge()\n        logging.info(\"Cleaned and expunged %d message(s).\", moved_count)\n\n\ndef main():\n    parser = argparse.ArgumentParser(description=\"Safely identify and archive newsletters.\")\n    parser.add_argument(\"--server\", default=\"imap.gmail.com\", help=\"IMAP server hostname\")\n    parser.add_argument(\"--user\", default=os.getenv(\"EMAIL_USER\"), help=\"Email address\")\n    parser.add_argument(\"--password\", default=os.getenv(\"EMAIL_PASS\"), help=\"App password\")\n    parser.add_argument(\"--folder\", default=\"INBOX\", help=\"Folder to scan\")\n    parser.add_argument(\"--target\", default=\"[Gmail]/All Mail\", help=\"Target archive folder\")\n    parser.add_argument(\"--limit\", type=int, default=25, help=\"Max emails to process (0 = all)\")\n    parser.add_argument(\"--apply\", action=\"store_true\", help=\"Execute archive (defaults to dry-run)\")\n\n    args = parser.parse_args()\n\n    if not args.user or not args.password:\n        logging.error(\"Provide credentials via --user/--password or EMAIL_USER/EMAIL_PASS env vars.\")\n        sys.exit(1)\n\n    is_dry_run = not args.apply\n    if is_dry_run:\n        logging.info(\"MODE: DRY-RUN. Previewing matches only. Pass --apply to commit changes.\")\n\n    client = connect_imap(args.server, args.user, args.password)\n    try:\n        scan_and_archive(client, args.folder, args.target, is_dry_run, args.limit)\n    finally:\n        try:\n            client.close()\n        except Exception:\n            pass\n        client.logout()\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed. This script uses only the standard library.\n2. Create an App-Specific Password inside your email provider settings (e.g., Google Account -> Security -> App Passwords). Do not use your primary login password.\n3. Run tool.py in dry-run mode first to test your connection safely:\n   python tool.py --user you@example.com --password \"your-app-pass\"\n\nHOW IT WORKS\n`tool.py` connects over TLS to your mail server and inspects messages for standard automated marketing headers such as `List-Unsubscribe`. By default, the script operates in dry-run mode, printing every matched message ID without modifying your inbox. Adding the `--apply` flag copies matched emails to your designated archive folder and removes them from the source inbox.\n\nADAPTING IT\n- To scan a custom folder, set `--folder \"Newsletters\"`.\n- To change destination folders, set `--target \"Archive\"` (folder paths vary across providers like Outlook, Fastmail, or Gmail).\n- To batch-process in smaller chunks, configure `--limit 10`.\n\nLIMITATIONS\n- Requires IMAP access enabled on your email account.\n- Two-factor authentication requires an app-specific password; standard passwords will be rejected by modern providers.\n- Does not automatically unsubscribe you from sender mailing lists; it archives existing messages from your inbox view.\n\nSUPPORT\nProvided as-is with no warranty. Always verify with dry-run mode before running `--apply`.",
+  "product_name": "Safe Inbox Newsletter Cleaner Kit",
+  "product_blurb": "Declutter your inbox by detecting automated marketing headers and routing newsletters to archive folders. Includes a default dry-run preview and customizable IMAP rules for safe cleanup.",
+  "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first"
+}

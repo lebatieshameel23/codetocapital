@@ -1,0 +1,52 @@
+{
+  "slug": "csv-batch-file-organizer",
+  "title": "Sort Hundreds of Files into Folders with 8 Lines of Python",
+  "hook_text": "Sort hundreds of files in seconds",
+  "description": "Stop dragging files into client folders manually after exporting reports. This eight-line Python script reads a CSV spreadsheet and sorts messy files into organized directories automatically.",
+  "tags": [
+    "python",
+    "automation",
+    "filemanagement",
+    "productivity",
+    "officehacks",
+    "sysadmin"
+  ],
+  "code": "import csv, shutil, os\n\nfor r in csv.DictReader(open(\"map.csv\")):\n    src, dst = r[\"file\"], r[\"folder\"]\n    if os.path.exists(src):\n        os.makedirs(dst, exist_ok=True)\n        shutil.move(src, dst)\nprint(\"Files sorted.\")",
+  "beats": [
+    {
+      "voice": "Most people do this by hand in Excel every week. Here is the ten-line version.",
+      "reveal": 3,
+      "badge": "MESSY FOLDERS",
+      "output": ""
+    },
+    {
+      "voice": "You track where client files belong in a spreadsheet, then spend Friday afternoon manually dragging them.",
+      "reveal": 5,
+      "badge": "READ SPREADSHEET",
+      "output": ""
+    },
+    {
+      "voice": "Export that sheet to CSV. Python checks every file, creates target folders automatically, and sorts them instantly.",
+      "reveal": 7,
+      "badge": "BATCH SORT",
+      "output": ""
+    },
+    {
+      "voice": "Run it once, and all your files are neatly filed in seconds.",
+      "reveal": 8,
+      "badge": "DONE IN SECONDS",
+      "output": "Files sorted."
+    },
+    {
+      "voice": "One limitation: duplicate file names can trigger errors unless you handle collisions. Stop organizing files by hand, because...",
+      "reveal": 8,
+      "badge": "DRY RUN READY",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Batch sort and organize files based on a CSV manifest.\"\"\"\n\nimport argparse\nimport csv\nimport logging\nimport os\nimport shutil\nfrom pathlib import Path\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%H:%M:%S\",\n)\n\n\ndef organize_files(\n    manifest_path: str,\n    dry_run: bool = False,\n    on_conflict: str = \"skip\",\n) -> dict:\n    \"\"\"Reads manifest and moves files to target folders.\"\"\"\n    stats = {\"processed\": 0, \"moved\": 0, \"skipped\": 0, \"errors\": 0}\n    manifest = Path(manifest_path)\n\n    if not manifest.is_file():\n        logging.error(f\"Manifest file not found: {manifest_path}\")\n        return stats\n\n    with open(manifest, mode=\"r\", encoding=\"utf-8-sig\") as f:\n        reader = csv.DictReader(f)\n        required = {\"file\", \"folder\"}\n        if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):\n            logging.error(\"CSV must contain 'file' and 'folder' headers.\")\n            return stats\n\n        for line_num, row in enumerate(reader, start=2):\n            raw_src = (row.get(\"file\") or \"\").strip()\n            raw_dst = (row.get(\"folder\") or \"\").strip()\n            if not raw_src or not raw_dst:\n                continue\n\n            stats[\"processed\"] += 1\n            src = Path(raw_src)\n\n            if not src.exists():\n                logging.warning(f\"Row {line_num}: Source not found '{src}'\")\n                stats[\"skipped\"] += 1\n                continue\n\n            dst_dir = Path(raw_dst)\n            target = dst_dir / src.name\n\n            if target.exists():\n                if on_conflict == \"skip\":\n                    logging.warning(f\"Target exists, skipping: '{target}'\")\n                    stats[\"skipped\"] += 1\n                    continue\n                elif on_conflict == \"rename\":\n                    counter = 1\n                    stem, suffix = src.stem, src.suffix\n                    while target.exists():\n                        target = dst_dir / f\"{stem}_{counter}{suffix}\"\n                        counter += 1\n\n            if dry_run:\n                logging.info(f\"[DRY-RUN] Would move '{src}' -> '{target}'\")\n                stats[\"moved\"] += 1\n                continue\n\n            try:\n                dst_dir.mkdir(parents=True, exist_ok=True)\n                shutil.move(str(src), str(target))\n                logging.info(f\"Moved: '{src.name}' -> '{target}'\")\n                stats[\"moved\"] += 1\n            except Exception as err:\n                logging.error(f\"Row {line_num}: Failed moving '{src}': {err}\")\n                stats[\"errors\"] += 1\n\n    return stats\n\n\ndef main():\n    parser = argparse.ArgumentParser(\n        description=\"Move files into folders defined by a CSV spreadsheet.\"\n    )\n    parser.add_argument(\n        \"--manifest\",\n        \"-m\",\n        default=\"map.csv\",\n        help=\"Path to manifest CSV (default: map.csv)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Preview planned file moves without moving anything\",\n    )\n    parser.add_argument(\n        \"--conflict\",\n        choices=[\"skip\", \"overwrite\", \"rename\"],\n        default=\"skip\",\n        help=\"Action when target file already exists (default: skip)\",\n    )\n    args = parser.parse_args()\n\n    logging.info(f\"Running file organizer (dry_run={args.dry_run})\")\n    results = organize_files(\n        manifest_path=args.manifest,\n        dry_run=args.dry_run,\n        on_conflict=args.conflict,\n    )\n    logging.info(\n        f\"Summary: {results['processed']} processed, \"\n        f\"{results['moved']} moved, {results['skipped']} skipped, \"\n        f\"{results['errors']} errors.\"\n    )\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\ntool.py runs on standard Python 3.8 or higher. No external third-party packages are required.\nPrepare a CSV file named map.csv (or specify your own with --manifest) containing two column headers:\n- file: relative or absolute path to the existing file\n- folder: destination folder path where the file should be relocated\n\nHOW IT WORKS\nThe script parses the CSV row by row. For each entry, it confirms the source file exists, builds the target directory path if it does not already exist, and moves the file into position. Use the --dry-run flag to inspect all moves in your terminal before changing any files on disk.\n\nADAPTING IT\n- Handle name collisions: Use --conflict rename to append incremental numbers (_1, _2) rather than skipping existing files.\n- Run dry runs: Always execute `python tool.py --dry-run` to verify directory paths before real execution.\n- Copy instead of move: Replace `shutil.move(str(src), str(target))` with `shutil.copy2(str(src), str(target))` if you want to keep original files intact.\n\nLIMITATIONS\nThe script moves files sequentially and expects local or accessible network mount paths. It does not resolve cloud storage sync conflicts or monitor ongoing folder changes.\n\nSUPPORT\nThis script is provided as-is without warranty. Test thoroughly in dry-run mode on non-critical data before running against production files.\n",
+  "product_name": "CSV Batch File Organizer",
+  "product_blurb": "Automatically sort hundreds of messy files into categorized folders using a simple spreadsheet mapping. Includes collision protection, dry-run simulation, and comprehensive terminal logging.",
+  "pillar": "Rename, sort or clean up hundreds of files in one command"
+}
