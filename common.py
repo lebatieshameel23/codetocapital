@@ -38,6 +38,69 @@ def save_history(h):
     HISTORY.write_text(json.dumps(h, indent=2, ensure_ascii=False))
 
 
+# ---------- duplicate guard ----------
+_STOP = {"a", "an", "and", "the", "of", "in", "into", "to", "with", "for", "from", "on", "your", "you", "stop",
+         "using", "use", "fast", "faster", "quick", "quickly", "safe", "safely", "easy", "easily", "python",
+         "pandas", "script", "tool", "kit", "cli", "lines", "line", "one", "hundreds", "automatically",
+         "auto", "how", "make", "build", "no", "more", "by", "is", "are", "this", "that", "it", "stop"}
+
+
+def _stem(w):
+    for suf in ("ing", "ers", "er", "es", "s"):
+        if w.endswith(suf) and len(w) - len(suf) >= 4:
+            return w[: -len(suf)]
+    return w
+
+
+def topic_words(entry):
+    text = " ".join(str(entry.get(k, "")) for k in ("slug", "title", "product_name")).lower()
+    return {_stem(w) for w in re.findall(r"[a-z]{3,}", text)} - {_stem(w) for w in _STOP}
+
+
+def script_library(hist):
+    """Everything already made or queued, as {slug, title, product_name, pillar} dicts (some fields may be missing)."""
+    lib, seen = [], set()
+
+    def add(e):
+        key = (e.get("slug") or "") + "|" + (e.get("title") or "")
+        if key not in seen:
+            seen.add(key)
+            lib.append(e)
+    for e in hist.get("library", []):
+        add(e)
+    for e in hist.get("videos", {}).values():
+        add({"slug": e.get("slug"), "title": e.get("title"), "pillar": e.get("pillar")})
+    for f in queue_files():
+        try:
+            q = json.loads(f.read_text())
+            add({k: q.get(k) for k in ("slug", "title", "product_name", "pillar")})
+        except (ValueError, OSError):
+            pass
+    snip = ROOT / "snippets"
+    if snip.exists():
+        for f in snip.glob("*.py"):
+            add({"slug": f.stem})
+    for t in hist.get("used_titles", []):
+        add({"title": t})
+    return lib
+
+
+def too_similar(script, library, threshold=0.4):
+    """Return a human-readable reason if `script` repeats something in `library`, else None."""
+    import difflib
+    mine, slug, title = topic_words(script), script.get("slug", ""), script.get("title", "").lower()
+    for e in library:
+        if slug and e.get("slug") == slug:
+            return f"the slug '{slug}' is already used by '{e.get('title') or slug}'"
+        other = e.get("title", "") or ""
+        if other and difflib.SequenceMatcher(None, title, other.lower()).ratio() >= 0.72:
+            return f"the title is nearly identical to '{other}'"
+        theirs = topic_words(e)
+        if mine and theirs and len(mine & theirs) / len(mine | theirs) >= threshold:
+            return f"it covers the same task as '{other or e.get('slug')}'"
+    return None
+
+
 def load_performance():
     return json.loads(PERFORMANCE.read_text()) if PERFORMANCE.exists() else {}
 

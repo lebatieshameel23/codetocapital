@@ -16,7 +16,7 @@ import sys
 
 import llm
 from common import (MAX_CODE_LINES, MAX_KIT_LINES, MAX_LINE_CHARS, QUEUE, load_config, load_history,
-                    load_performance, queue_files, save_history, validate_script)
+                    load_performance, queue_files, save_history, script_library, too_similar, validate_script)
 
 HOOK_STYLES = [
     "COST: open with a recurring cost the viewer recognises ('Say you pay someone $X a month to...'), with the sum shown.",
@@ -71,9 +71,12 @@ product_name, product_blurb."""
 extract_json = llm.extract_json
 
 
-def choose_pillar(pillars, perf, rnd):
-    weights = [max(0.3, float(perf.get("pillar_weights", {}).get(p, 1.0))) for p in pillars]
-    return rnd.choices(pillars, weights=weights, k=1)[0]
+def choose_pillar(pillars, perf, rnd, recent=()):
+    """Weighted by performance, but never a pillar used in the last half-cycle: variety beats repeating."""
+    cooldown = set(list(recent)[-(len(pillars) // 2):]) if recent else set()
+    pool = [p for p in pillars if p not in cooldown] or list(pillars)
+    weights = [max(0.3, float(perf.get("pillar_weights", {}).get(p, 1.0))) for p in pool]
+    return rnd.choices(pool, weights=weights, k=1)[0]
 
 
 def guidance(perf):
@@ -85,9 +88,12 @@ def guidance(perf):
     return out
 
 
-def generate_one(ai_cfg, pillar, hook_style, avoid, perf, feedback=""):
+def generate_one(ai_cfg, pillar, hook_style, avoid, perf, feedback="", same_pillar=()):
     user = (f"Content pillar: {pillar}\nHook style for this one: {hook_style}\n"
             f"Do not repeat or closely resemble these earlier titles: {avoid[-30:] or 'none yet'}\n"
+            + (f"Already made in THIS pillar (pick a clearly different specific task, not a rewording): "
+               f"{list(same_pillar)[-8:]}\n" if same_pillar else "")
+            +
             f"{guidance(perf)}{feedback}Write one new Short script now.")
     return extract_json(llm.complete(SYSTEM, user, max_tokens=6000, ai_cfg=ai_cfg))
 
@@ -99,14 +105,21 @@ def generate_batch(count, quiet=False):
     rnd = random.Random()
     counter = len(hist["used_titles"]) + len(queue_files())
     made = 0
+    lib = script_library(hist)
+    recent = hist.get("recent_pillars") or [e["pillar"] for e in lib if e.get("pillar")]
     for i in range(count):
-        pillar = choose_pillar(cfg["pillars"], perf, rnd)
+        pillar = choose_pillar(cfg["pillars"], perf, rnd, recent)
         style = HOOK_STYLES[(counter + i) % len(HOOK_STYLES)]
         feedback, s = "", None
         for attempt in range(4):
             try:
-                s = generate_one(cfg.get("ai"), pillar, style, hist["used_titles"], perf, feedback)
+                s = generate_one(cfg.get("ai"), pillar, style, hist["used_titles"], perf, feedback,
+                                 [e.get("title") for e in lib if e.get("pillar") == pillar and e.get("title")])
                 problems = validate_script(s)
+                if not problems:
+                    dup = too_similar(s, lib)
+                    if dup:
+                        problems = [f"too similar to an existing video: {dup}. Choose a different task and a new slug"]
             except Exception as e:  # bad JSON, API hiccup...
                 problems, s = [f"could not parse reply: {e}"], None
             if not problems:
@@ -123,6 +136,12 @@ def generate_batch(count, quiet=False):
         path = QUEUE / f"{stamp}-{i:02d}-{s['slug']}.json"
         path.write_text(json.dumps(s, indent=2, ensure_ascii=False))
         hist["used_titles"].append(s["title"])
+        entry = {"slug": s["slug"], "title": s["title"], "product_name": s["product_name"], "pillar": pillar}
+        lib.append(entry)
+        hist.setdefault("library", []).append(entry)
+        hist["library"] = hist["library"][-300:]
+        recent.append(pillar)
+        hist["recent_pillars"] = recent[-30:]
         made += 1
         if not quiet:
             print("queued:", path.name)
