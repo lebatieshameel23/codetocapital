@@ -26,7 +26,9 @@ jobs:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
-        run: python reply_bot.py
+        run: |
+          if [ -z "$YT_REFRESH_TOKEN" ]; then echo "YouTube not connected yet (no YT_REFRESH_TOKEN secret); skipping."; exit 0; fi
+          python reply_bot.py
       - name: Save state
         if: always()
         run: |
