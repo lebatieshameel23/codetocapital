@@ -52,6 +52,7 @@ python render_video.py content/samples/episode-01.json   # same, with the real v
 **2. Put this folder in a new public GitHub repo** and set `channel.github_repo` in `config.yaml` to `your-username/your-repo`. Public matters: the "comment CODE" links point to `snippets/` in it.
 
 **3. YouTube login**
+*Phone only? Follow `YOUTUBE_LOGIN.md` (Google Cloud Console + OAuth Playground, no computer needed) and skip the steps below.*
 1. In Google Cloud Console create a project, enable **YouTube Data API v3** and **YouTube Analytics API**.
 2. OAuth consent screen: External, add yourself as a test user. Create credentials: **OAuth client ID, type Desktop app**. Download as `client_secret.json` into this folder.
 3. Run `python auth_youtube.py` on your computer, sign in with the channel's Google account, and copy the three printed values. (It asks for upload, comment-reply and analytics permissions. If you logged in with an older version of this kit, run it again.)
