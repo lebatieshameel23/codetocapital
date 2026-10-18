@@ -9,7 +9,9 @@
   ],
   "scheduled": {
     "2026-10-18T12:00:00+02:00": "VYOCdjHthI0",
-    "2026-10-18T18:00:00+02:00": "l6B1EzvgQP0"
+    "2026-10-18T18:00:00+02:00": "l6B1EzvgQP0",
+    "2026-10-19T12:00:00+02:00": "hP8rUxJ_zmE",
+    "2026-10-19T18:00:00+02:00": "uiBKHyCHx8A"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -25,6 +27,20 @@
       "pillar": "Rename, sort or clean up hundreds of files in one command",
       "ep": 2,
       "publishAt": "2026-10-18T16:00:00.000Z"
+    },
+    "hP8rUxJ_zmE": {
+      "slug": "standardize-messy-filenames-python",
+      "title": "Batch Rename and Clean Messy Files in Python",
+      "pillar": "Rename, sort or clean up hundreds of files in one command",
+      "ep": 3,
+      "publishAt": "2026-10-19T10:00:00.000Z"
+    },
+    "uiBKHyCHx8A": {
+      "slug": "archive-newsletters-safely",
+      "title": "Archive Newsletters Safely with Python IMAP",
+      "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first",
+      "ep": 4,
+      "publishAt": "2026-10-19T16:00:00.000Z"
     }
   },
   "replied": []

@@ -1,0 +1,52 @@
+{
+  "slug": "schedule-daily-backups-python",
+  "title": "Schedule Daily Backups with 10 Lines of Python",
+  "hook_text": "Automate daily backups in Python",
+  "description": "Stop copying critical database files by hand every evening. Here is how to create automated daily snapshots with standard Python and your system scheduler.",
+  "tags": [
+    "python",
+    "automation",
+    "scheduling",
+    "sysadmin",
+    "cron",
+    "developer"
+  ],
+  "code": "import datetime, pathlib, shutil\n\nsrc = pathlib.Path(\"live.db\")\ndst = pathlib.Path(\"backups\")\ndst.mkdir(exist_ok=True)\ndate = datetime.date.today().isoformat()\ntarget = dst / f\"backup_{date}.db\"\nif not target.exists():\n    shutil.copy2(src, target)\n    print(f\"Saved: {target.name}\")",
+  "beats": [
+    {
+      "voice": "This backup ran completely on its own at 3 AM.",
+      "reveal": 0,
+      "badge": "Daily Auto-Backup",
+      "output": "Saved: backup_2025-05-18.db"
+    },
+    {
+      "voice": "Say you spend five minutes every evening copying your database manually. That's over thirty hours a year wasted.",
+      "reveal": 3,
+      "badge": "Target Folder",
+      "output": ""
+    },
+    {
+      "voice": "Ten lines of standard Python solve it. We grab today's date, build a backup path, and check if it already ran today.",
+      "reveal": 7,
+      "badge": "Date Stamp Check",
+      "output": ""
+    },
+    {
+      "voice": "If today's file doesn't exist yet, shutil copies it over and confirms the new snapshot.",
+      "reveal": 10,
+      "badge": "Automated Run",
+      "output": "Saved: backup_2025-05-18.db"
+    },
+    {
+      "voice": "Cron or Task Scheduler triggers this daily. A local script won't run if the computer is asleep. But keep your machine powered on, because...",
+      "reveal": 10,
+      "badge": "Run Daily via Cron",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Automated daily snapshot and rotation backup tool.\n\nSaves date-stamped file backups with deduplication, retention limits,\nand optional dry-run previewing.\n\"\"\"\n\nimport argparse\nimport datetime\nimport logging\nimport pathlib\nimport shutil\nimport sys\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%Y-%m-%d %H:%M:%S\",\n)\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Create automated daily snapshots with retention.\"\n    )\n    parser.add_argument(\n        \"--source\",\n        \"-s\",\n        type=pathlib.Path,\n        required=True,\n        help=\"Path to the source file to back up.\",\n    )\n    parser.add_argument(\n        \"--dest\",\n        \"-d\",\n        type=pathlib.Path,\n        default=pathlib.Path(\"backups\"),\n        help=\"Directory where backups are stored (default: backups/).\",\n    )\n    parser.add_argument(\n        \"--keep\",\n        \"-k\",\n        type=int,\n        default=14,\n        help=\"Maximum daily snapshots to retain (default: 14).\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Simulate actions without copying or pruning files.\",\n    )\n    return parser.parse_args()\n\n\ndef prune_old_backups(dest: pathlib.Path, prefix: str, ext: str, keep: int, dry_run: bool) -> None:\n    backups = sorted(\n        [p for p in dest.glob(f\"{prefix}_*{ext}\") if p.is_file()],\n        key=lambda p: p.stat().st_mtime,\n    )\n    overflow = len(backups) - keep\n    if overflow <= 0:\n        return\n\n    for old_file in backups[:overflow]:\n        if dry_run:\n            logging.info(\"[DRY RUN] Would prune old snapshot: %s\", old_file.name)\n        else:\n            old_file.unlink()\n            logging.info(\"Pruned expired snapshot: %s\", old_file.name)\n\n\ndef main() -> int:\n    args = parse_args()\n    src: pathlib.Path = args.source.resolve()\n    dst: pathlib.Path = args.dest.resolve()\n\n    if not src.exists() or not src.is_file():\n        logging.error(\"Source file does not exist or is not a file: %s\", src)\n        return 1\n\n    if not dst.exists() and not args.dry_run:\n        dst.mkdir(parents=True, exist_ok=True)\n\n    today_str = datetime.date.today().isoformat()\n    prefix = src.stem\n    ext = src.suffix\n    target_name = f\"{prefix}_{today_str}{ext}\"\n    target = dst / target_name\n\n    if target.exists():\n        logging.info(\"Backup already exists for today: %s\", target_name)\n    else:\n        if args.dry_run:\n            logging.info(\"[DRY RUN] Would copy %s -> %s\", src.name, target)\n        else:\n            try:\n                shutil.copy2(src, target)\n                logging.info(\"Successfully backed up to %s\", target_name)\n            except OSError as err:\n                logging.error(\"Failed to create backup: %s\", err)\n                return 1\n\n    prune_old_backups(dst, prefix, ext, args.keep, args.dry_run)\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8 or newer is installed.\n2. No third-party packages required; tool.py uses Python's standard library.\n3. Make tool.py executable or run it directly with python3 tool.py.\n\nHOW IT WORKS\nRun tool.py with --source pointing to your database, spreadsheet, or config file:\n  python3 tool.py --source live.db --dest /path/to/backups --keep 14\n\nThe script checks if today's date stamp already exists in the backup directory. If not, it copies the file using shutil.copy2 to preserve metadata. After backing up, it inspects existing snapshots matching the pattern and prunes snapshots older than the specified retention count (--keep).\n\nUse --dry-run to preview actions before running:\n  python3 tool.py --source live.db --dry-run\n\nTo schedule daily runs:\n- Linux/macOS (cron): run `crontab -e` and add:\n  0 3 * * * /usr/bin/python3 /path/to/tool.py --source /path/to/live.db --dest /path/to/backups\n- Windows (Task Scheduler): create a Basic Task triggered daily to start python.exe with the tool arguments.\n\nADAPTING IT\n- Change the naming convention inside main() if you need timestamps down to the hour.\n- Add email or webhook alerts on exit status 1 by piping output or wrapping with curl.\n\nLIMITATIONS\n- Designed for single-file snapshots; for large directory structures, consider tar archives.\n- If the host machine is turned off or sleeping during the scheduled cron hour, the job will not run unless wake-timers or anacron are configured.\n\nSUPPORT\nProvided as-is without warranty. Test with --dry-run on non-critical test files before automating production environments.",
+  "product_name": "Daily Snapshot and Backup Scheduler Kit",
+  "product_blurb": "Automate daily file and database snapshots with built-in retention cleanup and dry-run safety. Plugs directly into cron, Windows Task Scheduler, or GitHub Actions with zero external dependencies.",
+  "pillar": "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)"
+}

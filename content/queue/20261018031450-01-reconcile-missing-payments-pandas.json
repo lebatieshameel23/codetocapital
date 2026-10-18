@@ -1,0 +1,52 @@
+{
+  "slug": "reconcile-missing-payments-pandas",
+  "title": "Find Unpaid Invoices Across Two Sheets with Python",
+  "hook_text": "You don't need paid reconciliation apps",
+  "description": "Stop buying dedicated reconciliation tools just to spot missing payments between two exported spreadsheets. This clean pandas script matches orders against payout reports and isolates discrepancies in seconds.",
+  "tags": [
+    "python",
+    "pandas",
+    "accounting",
+    "spreadsheets",
+    "automation",
+    "smallbusiness"
+  ],
+  "code": "import pandas as pd\n\na = pd.read_csv(\"orders.csv\")\nb = pd.read_csv(\"payouts.csv\")\nm = a.merge(b, on=\"id\", how=\"left\")\nmissing = m[m[\"paid_date\"].isna()]\nmissing.to_csv(\"unpaid.csv\", index=False)\nprint(f\"Found {len(missing)} unpaid\")",
+  "beats": [
+    {
+      "voice": "You don't need paid reconciliation software to catch unpaid orders.",
+      "reveal": 1,
+      "badge": "MYTH BUSTED",
+      "output": ""
+    },
+    {
+      "voice": "Load your order export and your payout report straight into pandas.",
+      "reveal": 4,
+      "badge": "READ DATA",
+      "output": ""
+    },
+    {
+      "voice": "A left merge on the transaction ID reveals every sale with no payout match.",
+      "reveal": 6,
+      "badge": "FIND GAPS",
+      "output": ""
+    },
+    {
+      "voice": "Export those discrepancies straight to a spreadsheet ready for review.",
+      "reveal": 7,
+      "badge": "EXPORT CSV",
+      "output": "Found 14 unpaid"
+    },
+    {
+      "voice": "Just ensure ID formatting and whitespace match up across both files, because",
+      "reveal": 8,
+      "badge": "LIMITATION",
+      "output": "Found 14 unpaid"
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"tool.py - Match orders against payouts and export missing records.\"\"\"\n\nimport argparse\nimport logging\nimport sys\nfrom pathlib import Path\nimport pandas as pd\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(levelname)s: %(message)s\"\n)\n\n\ndef reconcile(\n    orders_path: Path,\n    payouts_path: Path,\n    key_col: str,\n    check_col: str,\n    output_path: Path,\n) -> int:\n    if not orders_path.exists():\n        logging.error(\"Orders file not found: %s\", orders_path)\n        return 1\n    if not payouts_path.exists():\n        logging.error(\"Payouts file not found: %s\", payouts_path)\n        return 1\n\n    try:\n        logging.info(\"Reading orders from %s\", orders_path)\n        orders = pd.read_csv(orders_path, dtype={key_col: str})\n\n        logging.info(\"Reading payouts from %s\", payouts_path)\n        payouts = pd.read_csv(payouts_path, dtype={key_col: str})\n    except Exception as err:\n        logging.error(\"Failed reading input files: %s\", err)\n        return 1\n\n    if key_col not in orders.columns:\n        logging.error(\"Key column '%s' missing from %s\", key_col, orders_path)\n        return 1\n    if key_col not in payouts.columns:\n        logging.error(\"Key column '%s' missing from %s\", key_col, payouts_path)\n        return 1\n    if check_col not in payouts.columns:\n        logging.error(\"Verification column '%s' missing from %s\", check_col, payouts_path)\n        return 1\n\n    # Normalize join keys to avoid whitespace mismatches\n    orders[key_col] = orders[key_col].str.strip()\n    payouts[key_col] = payouts[key_col].str.strip()\n\n    merged = orders.merge(\n        payouts[[key_col, check_col]],\n        on=key_col,\n        how=\"left\",\n        suffixes=(\"\", \"_payout\")\n    )\n\n    unmatched = merged[merged[check_col].isna()].copy()\n    output_path.parent.mkdir(parents=True, exist_ok=True)\n    unmatched.to_csv(output_path, index=False)\n\n    logging.info(\n        \"Reconciliation complete. Total orders: %d, Unmatched: %d\",\n        len(orders),\n        len(unmatched)\n    )\n    logging.info(\"Wrote unmatched records to %s\", output_path)\n    return 0\n\n\ndef main() -> int:\n    parser = argparse.ArgumentParser(\n        description=\"Cross-reference order exports with payout reports to spot missing funds.\"\n    )\n    parser.add_argument(\n        \"--orders\",\n        type=Path,\n        default=Path(\"orders.csv\"),\n        help=\"Path to primary sales CSV (default: orders.csv)\"\n    )\n    parser.add_argument(\n        \"--payouts\",\n        type=Path,\n        default=Path(\"payouts.csv\"),\n        help=\"Path to processor/bank CSV (default: payouts.csv)\"\n    )\n    parser.add_argument(\n        \"--key\",\n        default=\"id\",\n        help=\"Shared column name to join on (default: id)\"\n    )\n    parser.add_argument(\n        \"--check-col\",\n        default=\"paid_date\",\n        help=\"Column in payouts file that confirms settlement (default: paid_date)\"\n    )\n    parser.add_argument(\n        \"--out\",\n        type=Path,\n        default=Path(\"unmatched.csv\"),\n        help=\"Destination path for missing records CSV (default: unmatched.csv)\"\n    )\n\n    args = parser.parse_args()\n    return reconcile(args.orders, args.payouts, args.key, args.check_col, args.out)\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9 or higher is installed.\n2. Install required dependencies:\n   pip install pandas\n\nHOW IT WORKS\ntool.py reads two CSV exports: a primary transactions file (e.g., your store orders)\nand a settlement file (e.g., Stripe, PayPal, or bank payouts).\nIt strips leading/trailing spaces from your identifier column, performs a left join,\nand isolates all records that lack confirmation data in the payout sheet.\nThe unmatched rows are exported to a new clean CSV for quick audits.\n\nADAPTING IT\nRun tool.py with custom file names and column mappings:\npython tool.py --orders sales_may.csv --payouts bank_may.csv --key invoice_id --check-col settlement_date --out audit.csv\n\nYou can point tool.py at exports from QuickBooks, Shopify, Square, or custom ERP systems\nas long as both export a common unique identifier.\n\nLIMITATIONS\n- Both datasets must fit into system RAM simultaneously (suitable for millions of rows on standard laptops).\n- Column values must share identical formats (e.g., matching zero-padding on numeric order IDs).\n- Does not automatically resolve fuzzy matches (e.g. slight name misspellings).\n\nSUPPORT\nSoftware provided as-is without warranty. Test with non-critical sample files before using in financial reporting.",
+  "product_name": "CSV Payment Reconciliation Toolkit",
+  "product_blurb": "Quickly cross-reference internal sales spreadsheets against payment processor statements without expensive subscriptions. This Python utility catches missing payouts and exports clean audit files automatically.",
+  "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)"
+}
