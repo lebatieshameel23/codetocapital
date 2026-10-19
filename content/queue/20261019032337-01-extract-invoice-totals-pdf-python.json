@@ -1,0 +1,51 @@
+{
+  "slug": "extract-invoice-totals-pdf-python",
+  "title": "Extract Invoice Totals from PDFs with 10 Lines of Python",
+  "hook_text": "No paid software needed for PDFs",
+  "description": "Extract invoice numbers and dollar totals from a folder of digital PDF files into a clean CSV using Python. No monthly subscriptions, external web APIs, or manual copy-pasting required.",
+  "tags": [
+    "python",
+    "pdf",
+    "automation",
+    "smallbusiness",
+    "coding"
+  ],
+  "code": "from pypdf import PdfReader\nimport glob, re\nlines = [\"file,total\"]\nfor f in glob.glob(\"*.pdf\"):\n    t = \"\".join(p.extract_text() or \"\"\n        for p in PdfReader(f).pages)\n    m = re.search(r\"Total:\\s*(\\S+)\", t)\n    if m: lines.append(f\"{f},{m.group(1)}\")\nopen(\"out.csv\", \"w\").write(\"\\n\".join(lines))\nprint(\"wrote out.csv\")",
+  "beats": [
+    {
+      "voice": "Myth: you need a paid PDF subscription just to pull numbers out of invoices.",
+      "reveal": 2,
+      "badge": "BUSTING THE MYTH",
+      "output": ""
+    },
+    {
+      "voice": "Eight lines of standard Python and pypdf can read every file in your folder.",
+      "reveal": 4,
+      "badge": "SCAN INVOICES",
+      "output": ""
+    },
+    {
+      "voice": "It pulls page text and grabs the dollar amount next to the total label.",
+      "reveal": 8,
+      "badge": "REGEX MATCH",
+      "output": ""
+    },
+    {
+      "voice": "Run it once, and every invoice amount lands in a single clean spreadsheet.",
+      "reveal": 10,
+      "badge": "EXTRACTED",
+      "output": "wrote out.csv"
+    },
+    {
+      "voice": "Scanned image PDFs need OCR, but for digital files, don't believe the...",
+      "reveal": 10,
+      "badge": "DIGITAL TEXT ONLY",
+      "output": "wrote out.csv"
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Batch PDF invoice data extractor.\n\nExtracts matching values (such as invoice totals, invoice numbers,\nor dates) from native PDF files into a structured CSV file.\n\"\"\"\n\nimport argparse\nimport csv\nimport glob\nimport logging\nimport os\nimport re\nimport sys\nfrom pypdf import PdfReader\n\n\ndef setup_logging(verbose: bool) -> None:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(level=level, format=\"%(levelname)s: %(message)s\")\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Extract key fields from PDF documents into a CSV.\"\n    )\n    parser.add_argument(\n        \"--dir\",\n        default=\".\",\n        help=\"Folder containing PDF files (default: current directory)\",\n    )\n    parser.add_argument(\n        \"--pattern\",\n        default=\"*.pdf\",\n        help=\"Filename pattern to search (default: *.pdf)\",\n    )\n    parser.add_argument(\n        \"--regex\",\n        default=r\"(?i)total:\\s*\\$?([\\d,.]+)\",\n        help=\"Regex pattern with one capture group (default: total amount)\",\n    )\n    parser.add_argument(\n        \"--output\",\n        default=\"totals.csv\",\n        help=\"Path for output CSV file (default: totals.csv)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Print extracted matches to console without writing CSV\",\n    )\n    parser.add_argument(\n        \"-v\",\n        \"--verbose\",\n        action=\"store_true\",\n        help=\"Enable detailed debug logging\",\n    )\n    return parser.parse_args()\n\n\ndef extract_text_from_pdf(pdf_path: str) -> str:\n    try:\n        reader = PdfReader(pdf_path)\n        text_parts = []\n        for idx, page in enumerate(reader.pages):\n            page_text = page.extract_text() or \"\"\n            text_parts.append(page_text)\n        return \"\\n\".join(text_parts)\n    except Exception as exc:\n        logging.warning(\"Could not read %s: %s\", pdf_path, exc)\n        return \"\"\n\n\ndef main() -> int:\n    args = parse_args()\n    setup_logging(args.verbose)\n\n    search_path = os.path.join(args.dir, args.pattern)\n    pdf_files = sorted(glob.glob(search_path))\n\n    if not pdf_files:\n        logging.warning(\"No PDF files found matching: %s\", search_path)\n        return 0\n\n    logging.info(\"Found %d PDF file(s) in %s\", len(pdf_files), args.dir)\n\n    try:\n        matcher = re.compile(args.regex)\n    except re.error as err:\n        logging.error(\"Invalid regex pattern '%s': %s\", args.regex, err)\n        return 1\n\n    results = []\n    for pdf_path in pdf_files:\n        filename = os.path.basename(pdf_path)\n        text = extract_text_from_pdf(pdf_path)\n        if not text.strip():\n            logging.debug(\"No text extracted from %s (may be scanned image)\", filename)\n            continue\n\n        match = matcher.search(text)\n        if match:\n            captured_val = match.group(1).strip()\n            results.append({\"file\": filename, \"extracted_value\": captured_val})\n            logging.debug(\"Matched %s -> %s\", filename, captured_val)\n        else:\n            logging.debug(\"No regex match in %s\", filename)\n\n    logging.info(\"Extracted data from %d of %d file(s)\", len(results), len(pdf_files))\n\n    if args.dry_run:\n        print(\"--- DRY RUN: Extracted Rows ---\")\n        for item in results:\n            print(f\"{item['file']} => {item['extracted_value']}\")\n        return 0\n\n    try:\n        with open(args.output, \"w\", newline=\"\", encoding=\"utf-8\") as fp:\n            writer = csv.DictWriter(fp, fieldnames=[\"file\", \"extracted_value\"])\n            writer.writeheader()\n            writer.writerows(results)\n        logging.info(\"Successfully saved results to %s\", args.output)\n    except OSError as exc:\n        logging.error(\"Failed to write output CSV %s: %s\", args.output, exc)\n        return 1\n\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8 or newer is installed.\n2. Install the required PDF parsing library:\n   pip install pypdf\n3. Place tool.py in your project directory or invoice folder.\n\nHOW IT WORKS\ntool.py scans a target directory for PDF files, reads text across all pages using pypdf, and applies a configurable regular expression to locate specific values like invoice totals, tax amounts, or invoice identifiers. It aggregates the results and exports them directly into a clean CSV file.\n\nRun with defaults:\n  python tool.py\n\nPreview output without creating a file:\n  python tool.py --dry-run\n\nTarget a custom directory and output filename:\n  python tool.py --dir ./invoices --output 2024_totals.csv\n\nUse a custom regex for invoice IDs:\n  python tool.py --regex \"(?i)invoice\\s*#?\\s*([A-Z0-9-]+)\"\n\nADAPTING IT\n- Multiple Fields: Modify the regex extraction loop to match multiple labels (e.g., vendor name, date, subtotal, and tax) and append them as separate columns in DictWriter.\n- Database Export: Replace the CSV writer section with SQLite or PostgreSQL inserts using standard sqlite3 or psycopg packages.\n- Currency Formatting: Clean extracted string numbers into Python floats before writing to calculate automated sum totals.\n\nLIMITATIONS\n- Digital PDFs Only: tool.py extracts embedded selectable text. It cannot extract text from scanned documents, faxes, or photo-based PDFs without an optical character recognition (OCR) engine like Tesseract.\n- Layout Variances: Invoices with heavily fragmented multi-column layouts may output non-linear text streams that require tailored regular expressions.\n\nSUPPORT\nProvided as-is without warranty of any kind. Verify extracted numbers against a sample of your documents before relying on downstream accounting reports.",
+  "product_name": "PDF Invoice Batch Extractor Kit",
+  "product_blurb": "Extract totals and key data from dozens of digital PDF invoices into a clean CSV spreadsheet with a single command. Includes configurable regex matching, error-safe parsing, and a non-destructive dry-run mode.",
+  "pillar": "Extract data from PDFs or text files you own with a short script"
+}

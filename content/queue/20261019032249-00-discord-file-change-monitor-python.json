@@ -1,0 +1,52 @@
+{
+  "slug": "discord-file-change-monitor-python",
+  "title": "Alert Discord When a File Changes with Python",
+  "hook_text": "Discord alert when a file changes",
+  "description": "Send an immediate Discord notification whenever a critical vendor document or price sheet changes. This 10-line Python script fingerprints the file and pings your channel automatically.",
+  "tags": [
+    "python automation",
+    "discord webhook",
+    "file monitoring",
+    "python alert",
+    "devops tools",
+    "hashlib"
+  ],
+  "code": "import hashlib, requests\nWEBHOOK = \"https://discord.com/api/hook\"\nraw = open(\"terms.pdf\", \"rb\").read()\nh = hashlib.sha256(raw).hexdigest()\ntry: old = open(\".h\").read()\nexcept: old = \"\"\nif h != old:\n    msg = {\"content\": \"terms.pdf updated\"}\n    requests.post(WEBHOOK, json=msg)\n    open(\".h\", \"w\").write(h)",
+  "beats": [
+    {
+      "voice": "Your Discord gets pinged the exact second a supplier quietly updates their pricing PDF.",
+      "reveal": 0,
+      "badge": "Instant Alert",
+      "output": "POST 204: terms.pdf updated"
+    },
+    {
+      "voice": "Read the file as raw bytes, then calculate its unique SHA-256 fingerprint.",
+      "reveal": 4,
+      "badge": "Fingerprint",
+      "output": ""
+    },
+    {
+      "voice": "Next, compare that hash against the previous run stored in a tiny cache file.",
+      "reveal": 6,
+      "badge": "Compare State",
+      "output": ""
+    },
+    {
+      "voice": "When the hash shifts, post an instant webhook payload straight to your channel and store the update.",
+      "reveal": 10,
+      "badge": "Ping Channel",
+      "output": "Webhook delivered to Discord"
+    },
+    {
+      "voice": "This catches raw byte alterations rather than text diffs, keeping you fully protected whenever...",
+      "reveal": 10,
+      "badge": "Checksum Check",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Monitor a file for checksum changes and notify a Discord webhook.\n\"\"\"\n\nimport argparse\nimport hashlib\nimport logging\nimport os\nimport sys\nimport requests\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%H:%M:%S\",\n)\nlogger = logging.getLogger(\"tool\")\n\n\ndef compute_hash(filepath: str) -> str:\n    \"\"\"Compute SHA-256 hash of a local file in chunks.\"\"\"\n    hasher = hashlib.sha256()\n    with open(filepath, \"rb\") as f:\n        for chunk in iter(lambda: f.read(65536), b\"\"):\n            hasher.update(chunk)\n    return hasher.hexdigest()\n\n\ndef load_previous_hash(state_file: str) -> str:\n    \"\"\"Read cached hash if state file exists.\"\"\"\n    if not os.path.exists(state_file):\n        return \"\"\n    try:\n        with open(state_file, \"r\", encoding=\"ascii\") as f:\n            return f.read().strip()\n    except OSError as err:\n        logger.warning(\"Could not read state file: %s\", err)\n        return \"\"\n\n\ndef save_current_hash(state_file: str, digest: str) -> None:\n    \"\"\"Persist the newest hash to the state cache.\"\"\"\n    with open(state_file, \"w\", encoding=\"ascii\") as f:\n        f.write(digest)\n\n\ndef send_notification(webhook_url: str, filename: str, digest: str) -> bool:\n    \"\"\"Deliver a Discord message using standard incoming webhooks.\"\"\"\n    payload = {\n        \"content\": f\":bell: **File Update Detected**: `{filename}`\\nSHA-256: `{digest[:12]}...`\"\n    }\n    try:\n        res = requests.post(webhook_url, json=payload, timeout=10)\n        res.raise_for_status()\n        return True\n    except requests.RequestException as err:\n        logger.error(\"Failed to send webhook: %s\", err)\n        return False\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Track file changes by checksum and trigger Discord webhooks.\"\n    )\n    parser.add_argument(\n        \"--target\",\n        required=True,\n        help=\"Path to the file to monitor\",\n    )\n    parser.add_argument(\n        \"--webhook\",\n        required=True,\n        help=\"Discord incoming webhook URL\",\n    )\n    parser.add_argument(\n        \"--state\",\n        default=\".tool_state.hash\",\n        help=\"Path to store previous hash (default: .tool_state.hash)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Check hash without notifying or updating state file\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n\n    if not os.path.exists(args.target):\n        logger.error(\"Target file not found: %s\", args.target)\n        sys.exit(1)\n\n    current_hash = compute_hash(args.target)\n    logger.info(\"File: %s | SHA-256: %s\", args.target, current_hash[:12])\n\n    previous_hash = load_previous_hash(args.state)\n\n    if not previous_hash:\n        logger.info(\"Initial baseline recorded. Storing hash.\")\n        if not args.dry_run:\n            save_current_hash(args.state, current_hash)\n        return\n\n    if current_hash == previous_hash:\n        logger.info(\"No change detected.\")\n        return\n\n    logger.warning(\"Hash mismatch! File content has changed.\")\n    if args.dry_run:\n        logger.info(\"[DRY RUN] Would send Discord alert for %s\", args.target)\n        return\n\n    success = send_notification(args.webhook, os.path.basename(args.target), current_hash)\n    if success:\n        save_current_hash(args.state, current_hash)\n        logger.info(\"State updated successfully.\")\n    else:\n        logger.error(\"Alert failed. State file unchanged for retry.\")\n        sys.exit(2)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed.\n2. Install required dependencies:\n   pip install requests\n3. Obtain an incoming webhook URL from your Discord channel settings (Integrations -> Webhooks).\n\nHOW IT WORKS\ntool.py computes a SHA-256 cryptographic digest of a target file using streamed chunks to keep memory usage low.\nIt reads the previous hash from a local cache file (.tool_state.hash by default).\nIf the file is new, it records a baseline.\nIf the file has changed, it dispatches an automated notification message to Discord and writes the new hash to disk once delivery succeeds.\n\nUsage:\npython tool.py --target supplier_price_sheet.pdf --webhook https://discord.com/api/webhooks/YOUR_KEY\n\nTest run without triggering alerts or rewriting state:\npython tool.py --target supplier_price_sheet.pdf --webhook https://discord.com/api/webhooks/YOUR_KEY --dry-run\n\nADAPTING IT\n- Schedule execution every 15 minutes using cron (Linux/macOS) or Windows Task Scheduler.\n- Swap the Discord POST call for Telegram, Slack, or generic HTTP endpoint by adjusting the JSON payload structure.\n- Monitor multiple files by pointing distinct state files per file via the --state flag.\n\nLIMITATIONS\n- The script checks byte alterations via SHA-256; it does not parse or extract human-readable text diffs.\n- Requires local or mounted read access to the targeted file.\n\nSUPPORT\nSoftware is provided as-is without warranty. For community questions or feature contributions, consult your CodeToCapital workspace.",
+  "product_name": "Discord File Integrity & Price Monitor",
+  "product_blurb": "Automate instant channel notifications whenever important local spreadsheets, PDFs, or contracts change. Prevent missed vendor updates with clean SHA-256 monitoring and zero ongoing subscription fees.",
+  "pillar": "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes"
+}

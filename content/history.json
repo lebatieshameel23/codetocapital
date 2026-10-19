@@ -11,7 +11,9 @@
     "2026-10-18T12:00:00+02:00": "VYOCdjHthI0",
     "2026-10-18T18:00:00+02:00": "l6B1EzvgQP0",
     "2026-10-19T12:00:00+02:00": "hP8rUxJ_zmE",
-    "2026-10-19T18:00:00+02:00": "uiBKHyCHx8A"
+    "2026-10-19T18:00:00+02:00": "uiBKHyCHx8A",
+    "2026-10-20T12:00:00+02:00": "iTE6-WD5VY0",
+    "2026-10-20T18:00:00+02:00": "rkf3EVb7BL8"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -41,6 +43,20 @@
       "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first",
       "ep": 4,
       "publishAt": "2026-10-19T16:00:00.000Z"
+    },
+    "iTE6-WD5VY0": {
+      "slug": "clean-inbox-newsletters-python",
+      "title": "Clean Inbox Newsletters with 9 Lines of Python",
+      "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first",
+      "ep": 5,
+      "publishAt": "2026-10-20T10:00:00.000Z"
+    },
+    "rkf3EVb7BL8": {
+      "slug": "classify-messy-text-local-llm-python",
+      "title": "Classify Messy Text Fast with Python and Local AI",
+      "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text",
+      "ep": 6,
+      "publishAt": "2026-10-20T16:00:00.000Z"
     }
   },
   "replied": []
