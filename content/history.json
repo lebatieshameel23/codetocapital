@@ -13,7 +13,9 @@
     "2026-10-19T12:00:00+02:00": "hP8rUxJ_zmE",
     "2026-10-19T18:00:00+02:00": "uiBKHyCHx8A",
     "2026-10-20T12:00:00+02:00": "iTE6-WD5VY0",
-    "2026-10-20T18:00:00+02:00": "rkf3EVb7BL8"
+    "2026-10-20T18:00:00+02:00": "rkf3EVb7BL8",
+    "2026-10-21T12:00:00+02:00": "Uh0WWQMAMkk",
+    "2026-10-21T18:00:00+02:00": "RmCG0IQTKGo"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -57,6 +59,20 @@
       "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text",
       "ep": 6,
       "publishAt": "2026-10-20T16:00:00.000Z"
+    },
+    "Uh0WWQMAMkk": {
+      "slug": "schedule-daily-backups-python",
+      "title": "Schedule Daily Backups with 10 Lines of Python",
+      "pillar": "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)",
+      "ep": 7,
+      "publishAt": "2026-10-21T10:00:00.000Z"
+    },
+    "RmCG0IQTKGo": {
+      "slug": "reconcile-missing-payments-pandas",
+      "title": "Find Unpaid Invoices Across Two Sheets with Python",
+      "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)",
+      "ep": 8,
+      "publishAt": "2026-10-21T16:00:00.000Z"
     }
   },
   "replied": []

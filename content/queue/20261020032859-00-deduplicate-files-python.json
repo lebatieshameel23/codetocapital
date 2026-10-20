@@ -1,0 +1,52 @@
+{
+  "slug": "deduplicate-files-python",
+  "title": "Find and Delete Duplicate Files Safely with Python",
+  "hook_text": "Delete Duplicate Files Fast",
+  "description": "Quickly scan your directories and purge duplicate files by checking their exact cryptographic hash. The included production kit adds chunked hashing for large files, size pre-filtering, and an essential dry-run mode.",
+  "tags": [
+    "python",
+    "automation",
+    "clean up files",
+    "file management",
+    "duplicate files",
+    "productivity"
+  ],
+  "code": "from pathlib import Path\nfrom hashlib import md5\n\nseen = set()\nfor p in Path(\"files\").rglob(\"*\"):\n    if p.is_file():\n        h = md5(p.read_bytes()).digest()\n        if h in seen:\n            p.unlink()\n        seen.add(h)",
+  "beats": [
+    {
+      "voice": "Fourteen duplicate files gone, eighty megabytes back, zero manual clicking.",
+      "reveal": 0,
+      "badge": "Result First",
+      "output": "Deleted 14 duplicate files (82 MB reclaimed)"
+    },
+    {
+      "voice": "Scanning subfolders recursively gives you every file path without caring how deeply nested they are.",
+      "reveal": 5,
+      "badge": "Scan Subfolders",
+      "output": ""
+    },
+    {
+      "voice": "Hashing each file by its raw bytes spots exact duplicates even if someone changed the filename.",
+      "reveal": 7,
+      "badge": "Byte Hash Check",
+      "output": ""
+    },
+    {
+      "voice": "If the hash was already indexed, delete the clone on the spot and reclaim disk space.",
+      "reveal": 10,
+      "badge": "Trash Duplicates",
+      "output": "Removed copy: contract_final_v2.pdf"
+    },
+    {
+      "voice": "Whole files load into memory here, so the kit adds streaming chunks and a dry run before seeing",
+      "reveal": 10,
+      "badge": "Safety First",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Find and remove duplicate files safely.\"\"\"\n\nimport argparse\nimport hashlib\nimport logging\nfrom pathlib import Path\nimport sys\n\n\ndef setup_logger(verbose: bool) -> logging.Logger:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(\n        level=level,\n        format=\"%(asctime)s [%(levelname)s] %(message)s\",\n        datefmt=\"%H:%M:%S\",\n    )\n    return logging.getLogger(\"dedup\")\n\n\ndef hash_file(path: Path, chunk_size: int = 65536) -> str:\n    \"\"\"Calculate SHA-256 hash in chunks to handle large files safely.\"\"\"\n    hasher = hashlib.sha256()\n    with open(path, \"rb\") as f:\n        while chunk := f.read(chunk_size):\n            hasher.update(chunk)\n    return hasher.hexdigest()\n\n\ndef find_and_purge_duplicates(\n    target_dir: Path,\n    dry_run: bool = True,\n    logger: logging.Logger = None,\n) -> tuple[int, int]:\n    \"\"\"Scans target_dir and deletes duplicate files by content hash.\"\"\"\n    if not target_dir.exists() or not target_dir.is_dir():\n        raise ValueError(f\"Target directory does not exist: {target_dir}\")\n\n    seen_hashes: dict[str, Path] = {}\n    dupes_count = 0\n    bytes_freed = 0\n\n    # Group candidate files by size first to skip unnecessary hashing\n    size_map: dict[int, list[Path]] = {}\n    for p in target_dir.rglob(\"*\"):\n        if p.is_file() and not p.is_symlink():\n            try:\n                sz = p.stat().st_size\n                size_map.setdefault(sz, []).append(p)\n            except OSError as err:\n                logger.warning(f\"Could not stat {p}: {err}\")\n\n    # Only hash files that share the exact same byte size\n    for size, paths in size_map.items():\n        if len(paths) < 2:\n            continue\n\n        for p in paths:\n            try:\n                file_hash = hash_file(p)\n            except OSError as err:\n                logger.warning(f\"Could not read {p}: {err}\")\n                continue\n\n            if file_hash in seen_hashes:\n                dupes_count += 1\n                bytes_freed += size\n                original = seen_hashes[file_hash]\n                if dry_run:\n                    logger.info(f\"[DRY-RUN] Would delete: {p} (matches {original.name})\")\n                else:\n                    try:\n                        p.unlink()\n                        logger.info(f\"Deleted duplicate: {p} (matches {original.name})\")\n                    except OSError as err:\n                        logger.error(f\"Failed to delete {p}: {err}\")\n            else:\n                seen_hashes[file_hash] = p\n\n    return dupes_count, bytes_freed\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"Find and remove duplicate files safely by hash.\"\n    )\n    parser.add_argument(\n        \"--dir\",\n        type=Path,\n        default=Path(\".\"),\n        help=\"Directory to scan for duplicates (default: current directory)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        default=False,\n        help=\"Simulate cleanup without deleting any files\",\n    )\n    parser.add_argument(\n        \"--verbose\",\n        \"-v\",\n        action=\"store_true\",\n        help=\"Enable detailed debug logging\",\n    )\n\n    args = parser.parse_args()\n    logger = setup_logger(args.verbose)\n\n    if args.dry_run:\n        logger.info(\"Running in DRY-RUN mode. No files will be modified or removed.\")\n    else:\n        logger.warning(\"LIVE RUN: Duplicate files will be permanently deleted.\")\n\n    try:\n        count, freed = find_and_purge_duplicates(\n            target_dir=args.dir,\n            dry_run=args.dry_run,\n            logger=logger,\n        )\n        mb = freed / (1024 * 1024)\n        logger.info(f\"Scan complete. Found {count} duplicates ({mb:.2f} MB reclaimable).\")\n    except Exception as exc:\n        logger.error(f\"Fatal error during execution: {exc}\")\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9 or higher is installed.\n2. No third-party packages are required. The script relies entirely on standard library modules (pathlib, hashlib, argparse, logging).\n3. Save tool.py into your project directory.\n\nHOW IT WORKS\ntool.py cleans up duplicate files in three stages:\n1. Fast size grouping: It groups files by byte size. Files with unique sizes are never hashed, saving massive disk I/O.\n2. Chunked cryptographic hashing: Files sharing identical sizes are hashed using SHA-256 in 64 KB memory chunks.\n3. Safe duplicate resolution: The first file encountered is preserved as the original. Duplicate copies are recorded and deleted (or logged during dry-run).\n\nRun a dry-run test first:\npython tool.py --dir /path/to/folder --dry-run\n\nRun live cleanup:\npython tool.py --dir /path/to/folder\n\nADAPTING IT\n- Moving instead of deleting: Replace `p.unlink()` with `p.rename(trash_folder / p.name)` to archive files instead of permanently removing them.\n- Extension filtering: Add an extension check in the loop (e.g. `if p.suffix.lower() in {'.pdf', '.png'}:`) to target specific file formats.\n\nLIMITATIONS\n- Symbolic links and system shortcuts are skipped to prevent circular traversal.\n- Identical files with different metadata (like modified date) will still be treated as duplicates because hashing inspects raw byte content.\n\nSUPPORT\nProvided as-is without warranty. Always run with `--dry-run` first to preview changes before deleting production assets.",
+  "product_name": "Python Duplicate File Cleaner Kit",
+  "product_blurb": "Safely find and clean duplicate files across folders using cryptographic hashing. Includes chunked file streaming, size pre-filtering, and dry-run safety modes.",
+  "pillar": "Rename, sort or clean up hundreds of files in one command"
+}
