@@ -1,0 +1,52 @@
+{
+  "slug": "schedule-uptime-monitor-python",
+  "title": "Monitor Website Uptime Hourly with 10 Lines of Python",
+  "hook_text": "Catch site downtime before customers.",
+  "description": "Schedule an automatic uptime monitor in Python to catch site crashes and slow response times without expensive monthly subscriptions. Run it through cron or Task Scheduler to log server health continuously.",
+  "tags": [
+    "python",
+    "cron",
+    "uptime monitor",
+    "sysadmin",
+    "automation",
+    "web development"
+  ],
+  "code": "import time, urllib.request as u\nfrom datetime import datetime as dt\nurl = \"https://example.com\"\nt0 = time.time()\ntry:\n    with u.urlopen(url, timeout=5) as r:\n        s = r.status\nexcept Exception: s = \"DOWN\"\nms = round((time.time() - t0) * 1000)\nprint(f\"{dt.now():%H:%M} {url} {s} {ms}ms\")",
+  "beats": [
+    {
+      "voice": "Catch website downtime before your customers notice it.",
+      "reveal": 0,
+      "badge": "Uptime Monitor",
+      "output": "09:00 https://example.com 200 142ms"
+    },
+    {
+      "voice": "A short Python check pings your store and times the response down to the millisecond.",
+      "reveal": 4,
+      "badge": "Measure Latency",
+      "output": ""
+    },
+    {
+      "voice": "If your host crashes or times out, it logs the outage instead of hanging forever.",
+      "reveal": 8,
+      "badge": "Catch Outages",
+      "output": ""
+    },
+    {
+      "voice": "Pipe this into a log with cron every five minutes to spot latency spikes automatically.",
+      "reveal": 10,
+      "badge": "Schedule with Cron",
+      "output": "09:05 https://example.com DOWN 5001ms"
+    },
+    {
+      "voice": "Just run it on a cloud instance, because if your laptop sleeps cron pauses, leaving you unable to...",
+      "reveal": 10,
+      "badge": "Always-On Machine",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Automated website uptime monitor with CLI scheduling and alerting.\n\nChecks HTTP status codes, measures latency, writes to an append-only log,\nand optionally fires an HTTP webhook notification on failure.\n\"\"\"\n\nimport argparse\nimport json\nimport logging\nimport sys\nimport time\nimport urllib.error\nimport urllib.request\nfrom datetime import datetime\n\n\ndef check_url(url: str, timeout: float = 5.0) -> tuple[int, float, str]:\n    \"\"\"Ping a URL and return (status_code, duration_ms, error_message).\"\"\"\n    t0 = time.time()\n    try:\n        req = urllib.request.Request(\n            url,\n            headers={\"User-Agent\": \"CodeToCapital-Monitor/1.0\"},\n        )\n        with urllib.request.urlopen(req, timeout=timeout) as response:\n            elapsed_ms = round((time.time() - t0) * 1000, 1)\n            return response.status, elapsed_ms, \"\"\n    except urllib.error.HTTPError as exc:\n        elapsed_ms = round((time.time() - t0) * 1000, 1)\n        return exc.code, elapsed_ms, exc.reason\n    except urllib.error.URLError as exc:\n        elapsed_ms = round((time.time() - t0) * 1000, 1)\n        return 0, elapsed_ms, str(exc.reason)\n    except Exception as exc:  # Catch unexpected network timeouts\n        elapsed_ms = round((time.time() - t0) * 1000, 1)\n        return 0, elapsed_ms, str(exc)\n\n\ndef send_alert(webhook_url: str, url: str, status: int, err: str) -> None:\n    \"\"\"Post a JSON notification payload to a webhook on failure.\"\"\"\n    payload = json.dumps({\n        \"text\": f\"ALERT: {url} failed with status {status}. Reason: {err}\"\n    }).encode(\"utf-8\")\n    try:\n        req = urllib.request.Request(\n            webhook_url,\n            data=payload,\n            headers={\"Content-Type\": \"application/json\"},\n        )\n        with urllib.request.urlopen(req, timeout=5):\n            logging.info(\"Alert webhook sent successfully.\")\n    except Exception as exc:\n        logging.error(\"Failed to send webhook alert: %s\", exc)\n\n\ndef run_single_check(url: str, timeout: float, log_path: str | None,\n                     webhook: str | None, expected_status: int) -> bool:\n    \"\"\"Execute a single check and persist result to log file if configured.\"\"\"\n    timestamp = datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")\n    status, latency, err = check_url(url, timeout=timeout)\n    is_healthy = (status == expected_status)\n\n    label = f\"{status} OK\" if is_healthy else f\"FAIL ({status})\"\n    log_line = f\"{timestamp} | {url} | {label} | {latency}ms | {err}\\n\"\n\n    sys.stdout.write(log_line)\n    sys.stdout.flush()\n\n    if log_path:\n        try:\n            with open(log_path, \"a\", encoding=\"utf-8\") as fh:\n                fh.write(log_line)\n        except OSError as exc:\n            logging.error(\"Could not write to log %s: %s\", log_path, exc)\n\n    if not is_healthy and webhook:\n        send_alert(webhook, url, status, err)\n\n    return is_healthy\n\n\ndef main() -> int:\n    parser = argparse.ArgumentParser(\n        description=\"Monitor HTTP endpoint health and log uptime metrics.\"\n    )\n    parser.add_argument(\"url\", help=\"Target URL to check (e.g. https://example.com)\")\n    parser.add_argument(\"--timeout\", type=float, default=5.0, help=\"Request timeout in seconds\")\n    parser.add_argument(\"--log\", default=\"uptime.log\", help=\"Path to output log file\")\n    parser.add_argument(\"--status\", type=int, default=200, help=\"Expected HTTP status code\")\n    parser.add_argument(\"--webhook\", default=None, help=\"Webhook URL for failure notifications\")\n    parser.add_argument(\"--interval\", type=int, default=0, help=\"Loop check every N seconds (0 = run once)\")\n\n    args = parser.parse_args()\n    logging.basicConfig(level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\")\n\n    if args.interval <= 0:\n        healthy = run_single_check(args.url, args.timeout, args.log, args.webhook, args.status)\n        return 0 if healthy else 1\n\n    logging.info(\"Starting uptime loop for %s every %ds...\", args.url, args.interval)\n    try:\n        while True:\n            run_single_check(args.url, args.timeout, args.log, args.webhook, args.status)\n            time.sleep(args.interval)\n    except KeyboardInterrupt:\n        logging.info(\"Monitor stopped by user.\")\n        return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())",
+  "kit_readme": "SETUP\n- Requires Python 3.9+ standard library. No third-party packages needed.\n- Place tool.py on any server, VPS, or desktop machine you wish to monitor from.\n\nHOW IT WORKS\nRun a single check and write to an append log:\n  python tool.py https://mystore.com --log uptime.log\n\nSchedule via crontab to run every 5 minutes:\n  */5 * * * * /usr/bin/python3 /path/to/tool.py https://mystore.com --log /path/to/uptime.log\n\nOr run continuously in a daemon or tmux session with an interval loop:\n  python tool.py https://mystore.com --interval 300 --webhook https://hooks.slack.com/services/...\n\nADAPTING IT\n- Custom Status: If checking an endpoint that returns 204 or 301, pass --status 204.\n- Webhook Alerts: Connect Slack, Discord, or generic incoming webhooks using --webhook.\n- Windows Task Scheduler: Schedule tool.py using Windows python.exe to run periodically on a desktop or workstation.\n\nLIMITATIONS\n- If scheduled locally on a personal computer, scheduled tasks pause when the device sleeps or loses WiFi.\n- Simple HTTP status checks verify network and server responsiveness, but do not inspect JavaScript front-end rendering.\n\nSUPPORT\nDistributed under the MIT License. Provided as-is without warranty.",
+  "product_name": "Python Website Uptime & Cron Monitor Kit",
+  "product_blurb": "Monitor your online store or API health every few minutes without paying for third-party SaaS subscriptions. Includes an automated single-check CLI, timestamped append logging, and customizable failure webhook alerts.",
+  "pillar": "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)"
+}

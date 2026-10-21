@@ -15,7 +15,9 @@
     "2026-10-20T12:00:00+02:00": "iTE6-WD5VY0",
     "2026-10-20T18:00:00+02:00": "rkf3EVb7BL8",
     "2026-10-21T12:00:00+02:00": "Uh0WWQMAMkk",
-    "2026-10-21T18:00:00+02:00": "RmCG0IQTKGo"
+    "2026-10-21T18:00:00+02:00": "RmCG0IQTKGo",
+    "2026-10-22T12:00:00+02:00": "r_3B50aaiLo",
+    "2026-10-22T18:00:00+02:00": "fX6bsU_o37I"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -73,6 +75,20 @@
       "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)",
       "ep": 8,
       "publishAt": "2026-10-21T16:00:00.000Z"
+    },
+    "r_3B50aaiLo": {
+      "slug": "discord-file-change-monitor-python",
+      "title": "Alert Discord When a File Changes with Python",
+      "pillar": "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes",
+      "ep": 9,
+      "publishAt": "2026-10-22T10:00:00.000Z"
+    },
+    "fX6bsU_o37I": {
+      "slug": "extract-invoice-totals-pdf-python",
+      "title": "Extract Invoice Totals from PDFs with 10 Lines of Python",
+      "pillar": "Extract data from PDFs or text files you own with a short script",
+      "ep": 10,
+      "publishAt": "2026-10-22T16:00:00.000Z"
     }
   },
   "replied": []

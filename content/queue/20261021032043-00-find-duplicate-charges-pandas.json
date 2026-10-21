@@ -1,0 +1,52 @@
+{
+  "slug": "find-duplicate-charges-pandas",
+  "title": "Find Duplicate Charges Fast with 8 Lines of Python",
+  "hook_text": "Catch Duplicate Charges Fast",
+  "description": "Find every repeated transaction or billing discrepancy across your business data in seconds using pandas. Export flagged records side by side for rapid reconciliation.",
+  "tags": [
+    "python",
+    "pandas",
+    "accounting",
+    "automation",
+    "smallbusiness",
+    "finance"
+  ],
+  "code": "import pandas as pd\n\ndf = pd.read_csv(\"charges.csv\")\ndupes = df[df.duplicated(\n    subset=[\"client\", \"amount\"], keep=False\n)].sort_values(\"client\")\ndupes.to_csv(\"flagged.csv\", index=False)\nprint(f\"Flagged {len(dupes)} duplicates\")",
+  "beats": [
+    {
+      "voice": "There is a pandas feature that catches duplicate payments spreadsheet filters routinely miss.",
+      "reveal": 3,
+      "badge": "Spot Ghost Billing",
+      "output": ""
+    },
+    {
+      "voice": "Standard filters drop one copy, but keep equals false isolates every instance of repeated charges for that client.",
+      "reveal": 6,
+      "badge": "keep=False",
+      "output": ""
+    },
+    {
+      "voice": "We group them together so you see both the original bill and any duplicate side by side.",
+      "reveal": 6,
+      "badge": "Side-by-side",
+      "output": ""
+    },
+    {
+      "voice": "Run it, and python exports the exact discrepancies to a clean review sheet instantly.",
+      "reveal": 8,
+      "badge": "Done",
+      "output": "Flagged 4 duplicates"
+    },
+    {
+      "voice": "This requires exact text matching on names, so standardize spelling first to see why...",
+      "reveal": 8,
+      "badge": "Exact match only",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Production duplicate transaction auditor for business records.\"\"\"\n\nimport argparse\nimport logging\nfrom pathlib import Path\nimport sys\nimport pandas as pd\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\n\n\ndef parse_args():\n    parser = argparse.ArgumentParser(\n        description=\"Detect duplicate records and export side-by-side audit files.\"\n    )\n    parser.add_argument(\n        \"--input\", \"-i\", required=True, help=\"Path to source CSV or Excel file.\"\n    )\n    parser.add_argument(\n        \"--output\", \"-o\", default=\"duplicates_flagged.csv\", help=\"Output CSV path.\"\n    )\n    parser.add_argument(\n        \"--subset\",\n        \"-s\",\n        nargs=\"+\",\n        default=[\"client\", \"amount\"],\n        help=\"Column names to consider for duplication.\",\n    )\n    parser.add_argument(\n        \"--case-insensitive\",\n        action=\"store_true\",\n        help=\"Normalize string columns to lowercase before checking.\",\n    )\n    return parser.parse_args()\n\n\ndef load_data(filepath: Path) -> pd.DataFrame:\n    if not filepath.exists():\n        raise FileNotFoundError(f\"Input file does not exist: {filepath}\")\n    if filepath.suffix.lower() in [\".xlsx\", \".xls\"]:\n        return pd.read_excel(filepath)\n    return pd.read_csv(filepath)\n\n\ndef find_duplicates(\n    df: pd.DataFrame, subset: list, case_insensitive: bool\n) -> pd.DataFrame:\n    for col in subset:\n        if col not in df.columns:\n            raise KeyError(f\"Column '{col}' was not found in data: {list(df.columns)}\")\n\n    eval_df = df.copy()\n    if case_insensitive:\n        for col in subset:\n            if eval_df[col].dtype == object:\n                eval_df[col] = eval_df[col].astype(str).str.strip().str.lower()\n\n    mask = eval_df.duplicated(subset=subset, keep=False)\n    flagged = df[mask].sort_values(by=subset)\n    return flagged\n\n\ndef main():\n    args = parse_args()\n    src_path = Path(args.input)\n    out_path = Path(args.output)\n\n    try:\n        logging.info(\"Reading records from %s\", src_path)\n        df = load_data(src_path)\n        logging.info(\"Loaded %d total records. Scanning columns: %s\", len(df), args.subset)\n\n        dupes = find_duplicates(df, args.subset, args.case_insensitive)\n        count = len(dupes)\n\n        if count == 0:\n            logging.info(\"No duplicate rows identified.\")\n            return\n\n        out_path.parent.mkdir(parents=True, exist_ok=True)\n        dupes.to_csv(out_path, index=False)\n        logging.info(\"Wrote %d duplicate records to %s\", count, out_path)\n\n    except Exception as err:\n        logging.error(\"Audit failed: %s\", err)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9+ is installed.\n2. Install dependencies:\n   pip install pandas openpyxl\n3. Run tool.py from terminal.\n\nHOW IT WORKS\ntool.py reads tabular transaction data from CSV or Excel files. Standard spreadsheet duplicate removers retain the first occurrence and delete the rest, obscuring the paper trail. tool.py sets `keep=False` to preserve all copies, orders them by the specified columns, and exports them to an audit file for side-by-side reconciliation.\n\nUsage:\npython tool.py --input charges.csv --output duplicates.csv --subset client amount\n\nOptions:\n--case-insensitive: Strips extra whitespace and lowercases string fields before matching.\n\nADAPTING IT\n- To check for matching invoice numbers and dates instead, use:\n  python tool.py -i ledger.csv --subset invoice_id date\n- To flag transactions within a specific dollar window, add a rounding step before passing the column to subset.\n\nLIMITATIONS\nMatches require identical values in the chosen columns. It does not perform phonetic or fuzzy string matching for misspelled client names.\n\nSUPPORT\nCode is provided as-is without warranty. Test with a copy of your records before reconciling live financial accounts.",
+  "product_name": "Python Duplicate Audit Tool",
+  "product_blurb": "Automate billing reviews and spot double charges across large transaction files without Excel crashing. Exports all conflicting records side-by-side so your accounting team can reconcile ledgers quickly.",
+  "pillar": "Spot duplicates or errors in business data with a few lines of pandas"
+}
