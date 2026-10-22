@@ -17,7 +17,9 @@
     "2026-10-21T12:00:00+02:00": "Uh0WWQMAMkk",
     "2026-10-21T18:00:00+02:00": "RmCG0IQTKGo",
     "2026-10-22T12:00:00+02:00": "r_3B50aaiLo",
-    "2026-10-22T18:00:00+02:00": "fX6bsU_o37I"
+    "2026-10-22T18:00:00+02:00": "fX6bsU_o37I",
+    "2026-10-23T12:00:00+02:00": "yKPjt7-nxTk",
+    "2026-10-23T18:00:00+02:00": "YA8tUxCHM8k"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -89,6 +91,20 @@
       "pillar": "Extract data from PDFs or text files you own with a short script",
       "ep": 10,
       "publishAt": "2026-10-22T16:00:00.000Z"
+    },
+    "yKPjt7-nxTk": {
+      "slug": "deduplicate-files-python",
+      "title": "Find and Delete Duplicate Files Safely with Python",
+      "pillar": "Rename, sort or clean up hundreds of files in one command",
+      "ep": 11,
+      "publishAt": "2026-10-23T10:00:00.000Z"
+    },
+    "YA8tUxCHM8k": {
+      "slug": "find-duplicate-charges-pandas",
+      "title": "Find Duplicate Charges Fast with 8 Lines of Python",
+      "pillar": "Spot duplicates or errors in business data with a few lines of pandas",
+      "ep": 12,
+      "publishAt": "2026-10-23T16:00:00.000Z"
     }
   },
   "replied": []

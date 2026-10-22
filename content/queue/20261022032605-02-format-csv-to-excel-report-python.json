@@ -1,0 +1,51 @@
+{
+  "slug": "format-csv-to-excel-report-python",
+  "title": "Format Raw CSV Data into Excel Reports with Python",
+  "hook_text": "Myth: You need paid Excel add-ins",
+  "description": "Convert raw CSV files into cleanly formatted Excel workbooks without paying for third-party add-ins. This Python workflow automates header styling and column spacing using standard tools.",
+  "tags": [
+    "python",
+    "excel",
+    "openpyxl",
+    "data automation",
+    "office automation"
+  ],
+  "code": "import csv, openpyxl\nfrom openpyxl.styles import Font\nwb = openpyxl.Workbook()\nws = wb.active\nfor r in csv.reader(open(\"data.csv\")):\n    ws.append(r)\nfor c in ws[1]:\n    c.font = Font(bold=True, color=\"1F4E79\")\nws.column_dimensions[\"A\"].width = 20\nwb.save(\"report.xlsx\")",
+  "beats": [
+    {
+      "voice": "You don't need a paid add-in to turn raw data into formatted Excel workbooks. Ten lines of Python handles it all.",
+      "reveal": 4,
+      "badge": "Open-source styling",
+      "output": ""
+    },
+    {
+      "voice": "Create a fresh workbook, stream in your raw CSV records, and append them directly into your target worksheet.",
+      "reveal": 6,
+      "badge": "Stream CSV data",
+      "output": ""
+    },
+    {
+      "voice": "Then loop through the header row to apply clean bold navy styling, and lock in readable column widths.",
+      "reveal": 9,
+      "badge": "Apply styling",
+      "output": ""
+    },
+    {
+      "voice": "Save the file. Your formatted workbook is ready in under a second with zero subscription fees.",
+      "reveal": 10,
+      "badge": "Ready to share",
+      "output": "Saved report.xlsx (header styled)"
+    },
+    {
+      "voice": "It won't calculate live formula engines in headless mode, but whenever a new export lands...",
+      "reveal": 10,
+      "badge": "Limitation: static text",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py: Convert raw CSV data into a styled, professional Excel workbook.\n\"\"\"\n\nimport argparse\nimport csv\nimport logging\nimport os\nimport sys\nimport openpyxl\nfrom openpyxl.styles import Alignment, Font, PatternFill\nfrom openpyxl.utils import get_column_letter\n\n\ndef setup_logging(verbose: bool) -> None:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(\n        level=level,\n        format=\"%(asctime)s [%(levelname)s] %(message)s\",\n        datefmt=\"%H:%M:%S\",\n    )\n\n\ndef style_workbook(ws, header_color: str) -> None:\n    header_font = Font(name=\"Calibri\", size=11, bold=True, color=\"FFFFFF\")\n    header_fill = PatternFill(\n        start_color=header_color,\n        end_color=header_color,\n        fill_type=\"solid\",\n    )\n    center_align = Alignment(horizontal=\"center\", vertical=\"center\")\n\n    # Style header row\n    for cell in ws[1]:\n        cell.font = header_font\n        cell.fill = header_fill\n        cell.alignment = center_align\n    ws.row_dimensions[1].height = 24\n\n    # Auto-adjust column widths based on longest value\n    for col in ws.columns:\n        col_letter = get_column_letter(col[0].column)\n        max_len = max(len(str(cell.value or \"\")) for cell in col)\n        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)\n\n\ndef convert_csv_to_excel(\n    input_csv: str,\n    output_xlsx: str,\n    sheet_name: str,\n    header_hex: str,\n    dry_run: bool,\n) -> bool:\n    if not os.path.exists(input_csv):\n        logging.error(f\"Input file not found: {input_csv}\")\n        return False\n\n    wb = openpyxl.Workbook()\n    ws = wb.active\n    ws.title = sheet_name\n\n    row_count = 0\n    with open(input_csv, mode=\"r\", encoding=\"utf-8-sig\") as f:\n        reader = csv.reader(f)\n        for row in reader:\n            ws.append(row)\n            row_count += 1\n\n    if row_count == 0:\n        logging.warning(\"Input CSV was empty. No data imported.\")\n        return False\n\n    style_workbook(ws, header_hex)\n\n    if dry_run:\n        logging.info(\n            f\"[DRY-RUN] Processed {row_count} rows. Would save to: {output_xlsx}\"\n        )\n        return True\n\n    os.makedirs(os.path.dirname(output_xlsx) or \".\", exist_ok=True)\n    wb.save(output_xlsx)\n    logging.info(f\"Successfully wrote {row_count} rows to {output_xlsx}\")\n    return True\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Format raw CSV exports into styled Excel spreadsheets.\"\n    )\n    parser.add_argument(\n        \"-i\",\n        \"--input\",\n        default=\"data.csv\",\n        help=\"Path to source CSV file (default: data.csv)\",\n    )\n    parser.add_argument(\n        \"-o\",\n        \"--output\",\n        default=\"report.xlsx\",\n        help=\"Path for output Excel workbook (default: report.xlsx)\",\n    )\n    parser.add_argument(\n        \"--sheet\",\n        default=\"Report\",\n        help=\"Name of the generated worksheet tab\",\n    )\n    parser.add_argument(\n        \"--color\",\n        default=\"1F4E79\",\n        help=\"Hex color code for header fill without # (default: 1F4E79)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Simulate formatting without creating the Excel file\",\n    )\n    parser.add_argument(\n        \"-v\",\n        \"--verbose\",\n        action=\"store_true\",\n        help=\"Enable detailed logging\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n    setup_logging(args.verbose)\n\n    logging.info(\"Starting Excel formatting tool...\")\n    success = convert_csv_to_excel(\n        input_csv=args.input,\n        output_xlsx=args.output,\n        sheet_name=args.sheet,\n        header_hex=args.color,\n        dry_run=args.dry_run,\n    )\n\n    if not success:\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "# Automated Excel Report Builder\n\n## SETUP\n1. Ensure Python 3.8+ is installed on your machine.\n2. Install the openpyxl library:\n   ```bash\n   pip install openpyxl\n   ```\n3. Place `tool.py` in your working directory alongside your raw CSV export.\n\n## HOW IT WORKS\n`tool.py` reads data rows from a raw CSV export and generates a clean, readable `.xlsx` workbook using `openpyxl`. It automatically:\n- Ingests headers and records while handling standard UTF-8 encodings.\n- Applies high-contrast corporate header styling (bold white text on custom colored fills).\n- Dynamically measures text length in each column to set appropriate column widths, preventing clipped data.\n\nRun basic conversion:\n```bash\npython tool.py -i export.csv -o monthly_summary.xlsx\n```\n\nSimulate without creating an output file:\n```bash\npython tool.py -i export.csv -o monthly_summary.xlsx --dry-run\n```\n\n## ADAPTING IT\n- **Custom Header Colors**: Use the `--color` flag to pass any 6-character hex code matching your brand identity (e.g., `--color 2E7D32` for dark green).\n- **Sheet Naming**: Set custom tab titles using `--sheet \"Q3 Earnings\"`.\n- **Adding Currency Formatting**: In `tool.py`, locate `style_workbook()` and apply `cell.number_format = '$#,##0.00'` to specific numerical columns.\n\n## LIMITATIONS\n- Static layout only: `openpyxl` writes values and static formats; it does not calculate dynamic Excel formulas or run macros in the background.\n- Memory usage: Very large CSV files (over 500,000 rows) should use openpyxl's write-only mode to conserve system RAM.\n\n## SUPPORT\nThis script is provided as-is with no warranty. Verify output formatting against your business templates before client delivery.",
+  "product_name": "Automated Excel Report Builder Kit",
+  "product_blurb": "Convert raw CSV export files into formatted, client-ready Excel workbooks automatically with custom headers and adjusted column widths. Includes a configurable command-line script with logging, dry-run support, and sample data.",
+  "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl"
+}

@@ -1,0 +1,52 @@
+{
+  "slug": "daily-exchange-rates-to-csv",
+  "title": "Automate Daily Exchange Rates to CSV with Python",
+  "hook_text": "Pull live exchange rates to CSV",
+  "description": "Fetch official European Central Bank foreign exchange rates directly into spreadsheets without paid API keys. Run this lightweight Python script daily to automate multi-currency accounting.",
+  "tags": [
+    "python",
+    "finance",
+    "accounting",
+    "api",
+    "automation",
+    "csv"
+  ],
+  "code": "import csv, requests\nurl = \"https://api.frankfurter.app/latest\"\nr = requests.get(url, params={\"from\":\"USD\"})\nrates = r.json()[\"rates\"]\nwith open(\"rates.csv\", \"w\") as f:\n    w = csv.writer(f)\n    w.writerows(rates.items())\nprint(\"Updated rates.csv with live FX data\")",
+  "beats": [
+    {
+      "voice": "Here is your updated currency spreadsheet, pulled automatically from official central bank data.",
+      "reveal": 0,
+      "badge": "NO MANUAL FX LOOKUP",
+      "output": "Updated rates.csv with live FX data"
+    },
+    {
+      "voice": "We hit the free Frankfurter API to fetch daily ECB exchange rates for US Dollars.",
+      "reveal": 3,
+      "badge": "FREE PUBLIC API",
+      "output": ""
+    },
+    {
+      "voice": "We unpack thirty currencies directly into a clean two-column CSV file.",
+      "reveal": 7,
+      "badge": "EXPORT TO CSV",
+      "output": ""
+    },
+    {
+      "voice": "Say you spend ten minutes every morning copying rates; this saves you an hour every week.",
+      "reveal": 8,
+      "badge": "ZERO API KEYS",
+      "output": "Updated rates.csv with live FX data"
+    },
+    {
+      "voice": "The limitation is ECB rates publish once per business day, so it will not work for intra-day trading, but to balance your multi-currency books...",
+      "reveal": 8,
+      "badge": "ECB DAILY REFRESH",
+      "output": "rates.csv: 31 currencies saved"
+    }
+  ],
+  "kit_code": "\"\"\"tool.py: Fetch official European Central Bank exchange rates into CSV or JSON.\"\"\"\n\nimport argparse\nimport csv\nimport json\nimport logging\nimport sys\nfrom pathlib import Path\nimport requests\n\nBASE_URL = \"https://api.frankfurter.app\"\n\n\ndef parse_args():\n    parser = argparse.ArgumentParser(\n        description=\"Download daily official ECB foreign exchange rates.\"\n    )\n    parser.add_argument(\n        \"--base\",\n        default=\"USD\",\n        help=\"Base currency code in uppercase (default: USD).\",\n    )\n    parser.add_argument(\n        \"--symbols\",\n        default=\"\",\n        help=\"Comma-separated target currencies (e.g., EUR,GBP,CAD).\",\n    )\n    parser.add_argument(\n        \"--date\",\n        default=\"latest\",\n        help=\"Target date (YYYY-MM-DD) or 'latest' (default: latest).\",\n    )\n    parser.add_argument(\n        \"--output\",\n        default=\"rates.csv\",\n        type=Path,\n        help=\"Output file path (default: rates.csv).\",\n    )\n    parser.add_argument(\n        \"--format\",\n        choices=[\"csv\", \"json\"],\n        default=\"csv\",\n        help=\"Output file format (default: csv).\",\n    )\n    parser.add_argument(\n        \"-v\",\n        \"--verbose\",\n        action=\"store_true\",\n        help=\"Enable verbose debug logging.\",\n    )\n    return parser.parse_args()\n\n\ndef fetch_rates(base: str, date: str, symbols: str) -> dict:\n    url = f\"{BASE_URL}/{date}\"\n    params = {\"from\": base.upper()}\n    if symbols.strip():\n        params[\"to\"] = symbols.upper().replace(\" \", \"\")\n\n    logging.info(\"Querying ECB data via Frankfurter: %s with %s\", url, params)\n    try:\n        response = requests.get(url, params=params, timeout=10)\n        response.raise_for_status()\n    except requests.exceptions.HTTPError as err:\n        logging.error(\"HTTP request failed: %s\", err)\n        raise\n    except requests.exceptions.RequestException as err:\n        logging.error(\"Network error during exchange rate fetch: %s\", err)\n        raise\n\n    data = response.json()\n    if \"rates\" not in data:\n        raise ValueError(f\"Malformed response received from API: {data}\")\n    return data\n\n\ndef write_csv(data: dict, out_path: Path) -> None:\n    rates = data.get(\"rates\", {})\n    base = data.get(\"base\", \"BASE\")\n    date_str = data.get(\"date\", \"N/A\")\n\n    out_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(out_path, \"w\", newline=\"\", encoding=\"utf-8\") as f:\n        writer = csv.writer(f)\n        writer.writerow([\"base_currency\", \"target_currency\", \"rate\", \"date\"])\n        for target, rate in sorted(rates.items()):\n            writer.writerow([base, target, rate, date_str])\n\n\ndef write_json(data: dict, out_path: Path) -> None:\n    out_path.parent.mkdir(parents=True, exist_ok=True)\n    with open(out_path, \"w\", encoding=\"utf-8\") as f:\n        json.dump(data, f, indent=2)\n\n\ndef main():\n    args = parse_args()\n    log_level = logging.DEBUG if args.verbose else logging.INFO\n    logging.basicConfig(level=log_level, format=\"%(levelname)s: %(message)s\")\n\n    try:\n        data = fetch_rates(args.base, args.date, args.symbols)\n        rates_count = len(data.get(\"rates\", {}))\n\n        if args.format == \"csv\":\n            write_csv(data, args.output)\n        else:\n            write_json(data, args.output)\n\n        logging.info(\n            \"Successfully exported %d rates (%s) to %s\",\n            rates_count,\n            data.get(\"date\"),\n            args.output,\n        )\n    except Exception as exc:\n        logging.error(\"Failed to complete exchange rate export: %s\", exc)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\nInstall Python 3.8 or higher. Install the single dependency via terminal:\npip install requests\n\nHOW IT WORKS\nRun tool.py directly from your terminal:\npython tool.py\nBy default, tool.py connects to the open Frankfurter API (which tracks official European Central Bank reference exchange rates), queries the latest rates against USD, and writes rates.csv formatted with base_currency, target_currency, rate, and reference date.\n\nADAPTING IT\n- Change base currency:\n  python tool.py --base EUR\n- Filter for specific target currencies:\n  python tool.py --base USD --symbols EUR,GBP,CAD,JPY\n- Fetch historical rates for a past tax or invoice date:\n  python tool.py --date 2023-12-01 --output historical.csv\n- Export as JSON for API or web apps:\n  python tool.py --format json --output rates.json\n- Schedule with Windows Task Scheduler or cron to update your multi-currency ledger automatically every morning.\n\nLIMITATIONS\nThe European Central Bank publishes reference rates around 16:00 CET on working business days only. This data is not intended for real-time high-frequency trading or market maker arbitrage.\n\nSUPPORT\nProvided as-is for educational and automation purposes without warranty of any kind.",
+  "product_name": "Daily FX Rates CLI Exporter",
+  "product_blurb": "Automates pulling official European Central Bank foreign exchange rates into clean CSV or JSON files. Designed for small business finance workflows and accounting reconciliation without expensive API subscription fees.",
+  "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet"
+}
