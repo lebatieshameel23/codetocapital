@@ -1,0 +1,52 @@
+{
+  "slug": "sweep-inbox-newsletters-folders-python",
+  "title": "Sweep Inbox Newsletters into Folders with Python",
+  "hook_text": "Clear newsletters safely",
+  "description": "Automate inbox tidying by isolating subscription newsletters into folders using Python. Test your rules safely in dry-run mode before moving or modifying any live mail.",
+  "tags": [
+    "python",
+    "automation",
+    "email",
+    "imap",
+    "productivity",
+    "cleaninbox"
+  ],
+  "code": "import imaplib\nM = imaplib.IMAP4_SSL(\"imap.mail.com\")\nM.login(\"me@mail.com\", \"app_pass\")\nM.select(\"INBOX\")\nq = 'HEADER List-Unsubscribe \"\"'\n_, data = M.search(None, q)\ndry_run = True\nfor i in data[0].split():\n    if dry_run: print(\"Would move:\", i)\n    else: M.copy(i, \"Newsletters\")",
+  "beats": [
+    {
+      "voice": "Twelve promotional emails caught in one second without touching a single message.",
+      "reveal": 0,
+      "badge": "DRY RUN MODE",
+      "output": "Would move: b'101'"
+    },
+    {
+      "voice": "Connect to your mail host over SSL and log in using a dedicated app password.",
+      "reveal": 4,
+      "badge": "SECURE CONNECTION",
+      "output": ""
+    },
+    {
+      "voice": "Query your inbox for messages containing an unsubscribe header, keeping dry-run active first.",
+      "reveal": 7,
+      "badge": "FIND NEWSLETTERS",
+      "output": ""
+    },
+    {
+      "voice": "Loop through the matching IDs to verify exactly what gets selected before anything moves.",
+      "reveal": 9,
+      "badge": "PREVIEW RESULTS",
+      "output": "Would move: b'102'"
+    },
+    {
+      "voice": "Flip the switch to file them away, noting that IMAP folder names depend on your provider, so you instantly see...",
+      "reveal": 10,
+      "badge": "FOLDER ROUTED",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Safely identify and folder newsletter emails via IMAP.\"\"\"\n\nimport argparse\nimport email\nfrom email.header import decode_header\nimport imaplib\nimport logging\nimport sys\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Scan an IMAP inbox for newsletters and move them.\"\n    )\n    parser.add_argument(\"--host\", required=True, help=\"IMAP server hostname\")\n    parser.add_argument(\"--port\", type=int, default=993, help=\"IMAP SSL port\")\n    parser.add_argument(\"--user\", required=True, help=\"Account email address\")\n    parser.add_argument(\"--password\", required=True, help=\"App password or token\")\n    parser.add_argument(\"--folder\", default=\"INBOX\", help=\"Source folder to inspect\")\n    parser.add_argument(\"--dest\", default=\"Newsletters\", help=\"Target folder for matching mail\")\n    parser.add_argument(\"--limit\", type=int, default=50, help=\"Max messages to inspect\")\n    parser.add_argument(\n        \"--execute\",\n        action=\"store_true\",\n        help=\"Execute moves (default is safe dry-run)\",\n    )\n    return parser.parse_args()\n\n\ndef decode_str(header_val: str) -> str:\n    if not header_val:\n        return \"(no subject)\"\n    decoded_chunks = decode_header(header_val)\n    parts = []\n    for text, enc in decoded_chunks:\n        if isinstance(text, bytes):\n            parts.append(text.decode(enc or \"utf-8\", errors=\"replace\"))\n        else:\n            parts.append(str(text))\n    return \" \".join(parts)\n\n\ndef run() -> None:\n    logging.basicConfig(\n        level=logging.INFO, format=\"%(asctime)s [%(levelname)s] %(message)s\"\n    )\n    args = parse_args()\n    mode = \"EXECUTE\" if args.execute else \"DRY-RUN\"\n    logging.info(\"Starting inbox sweep in %s mode\", mode)\n\n    try:\n        client = imaplib.IMAP4_SSL(args.host, args.port)\n        client.login(args.user, args.password)\n    except Exception as exc:\n        logging.error(\"Failed to connect or log in: %s\", exc)\n        sys.exit(1)\n\n    try:\n        status, _ = client.select(f'\"{args.folder}\"')\n        if status != \"OK\":\n            logging.error(\"Failed to open source folder: %s\", args.folder)\n            sys.exit(1)\n\n        search_query = 'HEADER List-Unsubscribe \"\"'\n        status, data = client.search(None, search_query)\n        if status != \"OK\" or not data or not data[0]:\n            logging.info(\"No newsletter emails detected matching criteria.\")\n            client.logout()\n            return\n\n        msg_ids = data[0].split()\n        logging.info(\n            \"Found %d candidate messages (evaluating up to %d)\",\n            len(msg_ids),\n            args.limit,\n        )\n\n        moved = 0\n        for msg_id in msg_ids[: args.limit]:\n            status, header_data = client.fetch(\n                msg_id, \"(BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])\"\n            )\n            subject = \"(unknown)\"\n            sender = \"(unknown)\"\n            if status == \"OK\" and header_data and header_data[0]:\n                raw_bytes = header_data[0][1]\n                msg = email.message_from_bytes(raw_bytes)\n                subject = decode_str(msg.get(\"Subject\", \"\"))\n                sender = msg.get(\"From\", \"(unknown)\")\n\n            if not args.execute:\n                logging.info(\n                    \"[DRY-RUN] Would move msg %s | From: %s | Subject: %s\",\n                    msg_id.decode(),\n                    sender,\n                    subject[:40],\n                )\n            else:\n                copy_status, _ = client.copy(msg_id, f'\"{args.dest}\"')\n                if copy_status == \"OK\":\n                    client.store(msg_id, \"+FLAGS\", \"(\\\\Deleted)\")\n                    moved += 1\n                    logging.info(\n                        \"Moved msg %s to %s | Subject: %s\",\n                        msg_id.decode(),\n                        args.dest,\n                        subject[:40],\n                    )\n                else:\n                    logging.warning(\n                        \"Failed to copy msg %s to %s\", msg_id.decode(), args.dest\n                    )\n\n        if args.execute:\n            client.expunge()\n            logging.info(\"Successfully moved %d emails to %s\", moved, args.dest)\n        else:\n            logging.info(\"Dry run complete. No messages were altered or moved.\")\n\n        client.close()\n        client.logout()\n    except Exception as exc:\n        logging.error(\"Error during inbox processing: %s\", exc)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    run()",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed. This script uses only standard library modules (imaplib, email, argparse, logging).\n2. Create an App Password in your email provider settings (e.g., Google Account -> Security -> 2-Step Verification -> App passwords). Never hardcode your primary password.\n3. Verify your IMAP host details (e.g., imap.gmail.com:993 or outlook.office365.com:993).\n\nHOW IT WORKS\nRun tool.py directly from the terminal:\n  python tool.py --host imap.example.com --user me@example.com --password \"app_pass\"\n\nBy default, tool.py runs in safe DRY-RUN mode. It searches the specified inbox folder for messages that include an RFC-standard 'List-Unsubscribe' header, prints their sender and subject, and makes zero modifications. To actually move matches to your target folder, pass the --execute flag:\n  python tool.py --host imap.example.com --user me@example.com --password \"app_pass\" --dest \"Newsletters\" --execute\n\nADAPTING IT\n- Change search criteria by modifying the IMAP search query (e.g., add UNSEEN to target only unread newsletters).\n- Adjust batch limits using the --limit argument to process large backlogs incrementally.\n- Set --folder to scan subfolders or specific labels instead of INBOX.\n\nLIMITATIONS\n- IMAP folder names are case-sensitive and vendor-specific (for instance, Gmail requires parent labels like '[Gmail]/Trash' or custom label names).\n- Requires IMAP access to be enabled on your mail provider.\n\nSUPPORT\nProvided as-is for educational and operational automation without warranty of any kind. Always perform a dry-run before executing moves on production mailboxes.",
+  "product_name": "Python IMAP Newsletter Triage Kit",
+  "product_blurb": "Safely sweep promotional newsletters out of your primary inbox into dedicated archive folders using Python IMAP. Includes dry-run verification, subject extraction, and customizable search rules.",
+  "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first"
+}

@@ -1,0 +1,52 @@
+{
+  "slug": "telegram-alert-page-changes-python",
+  "title": "Send Telegram Alerts When a Web Page Changes in Python",
+  "hook_text": "Telegram Alerts on Page Changes",
+  "description": "Monitor any allowed vendor or status page and push instant notifications to your phone when content updates. Learn how ten lines of Python leverage checksums and Telegram bots to automate change tracking.",
+  "tags": [
+    "python automation",
+    "telegram bot",
+    "web scraping",
+    "devops alerts",
+    "python scripting",
+    "workflow automation"
+  ],
+  "code": "import hashlib, requests\nurl = \"https://example.com/status\"\ncur = hashlib.sha1(\n    requests.get(url).content).hexdigest()\nif cur != \"old_hash_value\":\n    api = \"https://api.telegram.org/botX/\"\n    data = {\"chat_id\": 123, \"text\": url}\n    requests.post(api + \"sendMessage\",\n                  json=data)\n    print(\"Telegram alert delivered\")",
+  "beats": [
+    {
+      "voice": "There is a 10-line Python pattern that alerts your phone the second a vendor page changes.",
+      "reveal": 2,
+      "badge": "Vendor Watcher",
+      "output": ""
+    },
+    {
+      "voice": "Fetch the live content and calculate a fast SHA1 hash to fingerprint the current page state.",
+      "reveal": 4,
+      "badge": "Hash Fingerprint",
+      "output": ""
+    },
+    {
+      "voice": "If that fingerprint differs from your stored checksum, hit Telegram's bot API with a single POST.",
+      "reveal": 9,
+      "badge": "Telegram Webhook",
+      "output": ""
+    },
+    {
+      "voice": "Run it on a periodic timer, and you receive an immediate alert the moment changes publish.",
+      "reveal": 10,
+      "badge": "Alert Delivered",
+      "output": "Telegram alert delivered"
+    },
+    {
+      "voice": "Watch out for dynamic timestamps or analytics scripts triggering false alerts, because...",
+      "reveal": 10,
+      "badge": "Clean Payloads",
+      "output": "Telegram alert delivered"
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Web Page Change Monitor with Telegram Alerts.\n\nTracks changes to a given URL by comparing SHA-256 hashes of its content.\nStores state in a local JSON cache and alerts via Telegram bot.\n\"\"\"\n\nimport argparse\nimport hashlib\nimport json\nimport logging\nimport os\nimport sys\nimport requests\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\"\n)\nlogger = logging.getLogger(\"page_watcher\")\n\n\ndef load_state(cache_path: str) -> dict:\n    if os.path.exists(cache_path):\n        try:\n            with open(cache_path, \"r\", encoding=\"utf-8\") as f:\n                return json.load(f)\n        except (json.JSONDecodeError, OSError) as exc:\n            logger.warning(\"Could not read state cache (%s). Starting fresh.\", exc)\n    return {}\n\n\ndef save_state(cache_path: str, state: dict) -> None:\n    try:\n        with open(cache_path, \"w\", encoding=\"utf-8\") as f:\n            json.dump(state, f, indent=2)\n    except OSError as exc:\n        logger.error(\"Failed to save state cache: %s\", exc)\n\n\ndef send_telegram_alert(bot_token: str, chat_id: str, message: str, dry_run: bool = False) -> bool:\n    if dry_run:\n        logger.info(\"[DRY RUN] Telegram alert skipped: %s\", message)\n        return True\n    \n    api_url = f\"https://api.telegram.org/bot{bot_token}/sendMessage\"\n    payload = {\"chat_id\": chat_id, \"text\": message, \"parse_mode\": \"Markdown\"}\n    \n    try:\n        resp = requests.post(api_url, json=payload, timeout=10)\n        resp.raise_for_status()\n        logger.info(\"Telegram notification delivered successfully.\")\n        return True\n    except requests.RequestException as exc:\n        logger.error(\"Failed to dispatch Telegram alert: %s\", exc)\n        return False\n\n\ndef check_url(url: str, timeout: int = 15) -> tuple[str, int]:\n    headers = {\"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) Monitor/1.0\"}\n    resp = requests.get(url, headers=headers, timeout=timeout)\n    resp.raise_for_status()\n    content_hash = hashlib.sha256(resp.content).hexdigest()\n    return content_hash, len(resp.content)\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"Check a web page for content changes and notify via Telegram.\"\n    )\n    parser.add_argument(\"--url\", required=True, help=\"URL of the page to monitor\")\n    parser.add_argument(\"--token\", default=os.getenv(\"TELEGRAM_BOT_TOKEN\"), help=\"Telegram Bot Token\")\n    parser.add_argument(\"--chat-id\", default=os.getenv(\"TELEGRAM_CHAT_ID\"), help=\"Telegram Chat ID\")\n    parser.add_argument(\"--cache\", default=\"monitor_cache.json\", help=\"Path to state cache file\")\n    parser.add_argument(\"--dry-run\", action=\"store_true\", help=\"Log changes without sending Telegram message\")\n    parser.add_argument(\"--timeout\", type=int, default=15, help=\"HTTP request timeout in seconds\")\n\n    args = parser.parse_args()\n\n    if not args.dry_run and (not args.token or not args.chat_id):\n        logger.error(\"Telegram credentials missing. Provide --token and --chat-id or use --dry-run.\")\n        sys.exit(1)\n\n    logger.info(\"Fetching target URL: %s\", args.url)\n    try:\n        current_hash, byte_size = check_url(args.url, timeout=args.timeout)\n    except requests.RequestException as exc:\n        logger.error(\"HTTP request failed: %s\", exc)\n        sys.exit(2)\n\n    state = load_state(args.cache)\n    last_hash = state.get(args.url)\n\n    if last_hash is None:\n        logger.info(\"Initial baseline recorded (%s bytes). Hash: %s\", byte_size, current_hash[:12])\n        state[args.url] = current_hash\n        save_state(args.cache, state)\n        return\n\n    if current_hash != last_hash:\n        logger.info(\"Change detected! Previous: %s, Current: %s\", last_hash[:12], current_hash[:12])\n        msg = f\"*Page Change Detected*\\n\\nURL: {args.url}\\nPayload Size: {byte_size} bytes\"\n        sent = send_telegram_alert(args.token, args.chat_id, msg, dry_run=args.dry_run)\n        if sent:\n            state[args.url] = current_hash\n            save_state(args.cache, state)\n    else:\n        logger.info(\"No changes detected. Hash matches existing state (%s).\", current_hash[:12])\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed.\n2. Install required package:\n   pip install requests\n3. Create a Telegram bot via @BotFather to get your TELEGRAM_BOT_TOKEN.\n4. Retrieve your chat ID (e.g., via @userinfobot).\n\nHOW IT WORKS\ntool.py requests the target web page, hashes the raw content using SHA-256, and compares it against a cached hash stored in monitor_cache.json.\nIf the hash changes, it posts a formatted message directly to your Telegram chat and updates the cache.\n\nUsage:\npython tool.py --url \"https://example.com/status\" --token \"YOUR_BOT_TOKEN\" --chat-id \"YOUR_CHAT_ID\"\n\nTest safely with dry-run mode:\npython tool.py --url \"https://example.com/status\" --dry-run\n\nADAPTING IT\n- Schedule with cron (Linux/macOS) or Task Scheduler (Windows) to run every 15 minutes.\n- Environment variables: set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in your environment to avoid passing them via flags.\n- For sites with dynamic scripts or ads, strip non-content tags using BeautifulSoup before hashing.\n\nLIMITATIONS\nPages featuring rotating ads, CSRF tokens, dynamic timestamps, or client-side JavaScript rendering (SPA) will trigger false alarms unless filtered first. Only monitor pages whose terms of service permit automated retrieval.\n\nSUPPORT\nProvided as-is without warranty. Community support available on CodeToCapital forums.",
+  "product_name": "Web Page Change Notifier for Telegram",
+  "product_blurb": "Monitor vendor updates, pricing pages, and status feeds with automatic Telegram pings on content updates. Includes CLI flags, local hash caching, error logging, and dry-run testing support.",
+  "pillar": "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes"
+}
