@@ -1,0 +1,52 @@
+{
+  "slug": "organize-files-by-month-python",
+  "title": "Organize Files by Month with 10 Lines of Python",
+  "hook_text": "No paid app needed to sort by month.",
+  "description": "Stop paying for desktop utilities just to organize messy document archives. Here is how ten lines of standard Python automatically sorts loose files into year and month folders.",
+  "tags": [
+    "python",
+    "filemanagement",
+    "automation",
+    "productivity",
+    "sysadmin",
+    "workflow"
+  ],
+  "code": "import shutil, time\nfrom pathlib import Path\n\nfor p in Path(\"inbox\").glob(\"*.*\"):\n    ym = time.strftime(\"%Y-%m\",\n        time.gmtime(p.stat().st_mtime))\n    dest = Path(\"archive\") / ym\n    dest.mkdir(parents=True, exist_ok=True)\n    shutil.move(p, dest / p.name)\n    print(f\"filed {p.name} -> {ym}\")",
+  "beats": [
+    {
+      "voice": "You don't need paid organizer software to sort messy files by month.",
+      "reveal": 4,
+      "badge": "BUILT-IN PYTHON",
+      "output": ""
+    },
+    {
+      "voice": "Point Python at your inbox folder and read each file's modification timestamp.",
+      "reveal": 6,
+      "badge": "PARSE TIMESTAMPS",
+      "output": ""
+    },
+    {
+      "voice": "Format that timestamp into a year-month string and build the target folder on the fly.",
+      "reveal": 8,
+      "badge": "AUTO-MAKE FOLDERS",
+      "output": ""
+    },
+    {
+      "voice": "Then move each file over. In seconds, loose documents are neatly filed by month.",
+      "reveal": 10,
+      "badge": "CLEAN ARCHIVE",
+      "output": "filed inv_102.pdf -> 2023-11"
+    },
+    {
+      "voice": "One catch: file timestamps can reset if you copy files across drives, which is why...",
+      "reveal": 10,
+      "badge": "WATCH TIMESTAMPS",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Automatically organize files into Year/Month directory structures.\n\"\"\"\n\nimport argparse\nimport logging\nimport shutil\nimport sys\nimport time\nfrom pathlib import Path\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(levelname)s: %(message)s\"\n)\nlogger = logging.getLogger(\"file_sorter\")\n\n\ndef organize_files(\n    source_dir: Path,\n    target_dir: Path,\n    date_format: str = \"%Y/%m\",\n    copy_mode: bool = False,\n    dry_run: bool = True,\n) -> tuple[int, int]:\n    \"\"\"Sort files from source_dir into target_dir grouped by date.\"\"\"\n    if not source_dir.is_dir():\n        raise FileNotFoundError(f\"Source folder does not exist: {source_dir}\")\n\n    target_dir.mkdir(parents=True, exist_ok=True)\n    success_count = 0\n    skip_count = 0\n\n    for item in source_dir.iterdir():\n        if not item.is_file() or item.name.startswith(\".\"):\n            continue\n\n        try:\n            mtime = item.stat().st_mtime\n            subfolder_name = time.strftime(date_format, time.localtime(mtime))\n            destination_folder = target_dir / subfolder_name\n            destination_path = destination_folder / item.name\n\n            # Resolve collisions to prevent overwriting\n            counter = 1\n            stem = item.stem\n            suffix = item.suffix\n            while destination_path.exists() and not dry_run:\n                destination_path = destination_folder / f\"{stem}_{counter}{suffix}\"\n                counter += 1\n\n            action = \"COPY\" if copy_mode else \"MOVE\"\n            if dry_run:\n                logger.info(\"[DRY RUN] Would %s: %s -> %s\", action, item.name, destination_path)\n                success_count += 1\n                continue\n\n            destination_folder.mkdir(parents=True, exist_ok=True)\n            if copy_mode:\n                shutil.copy2(item, destination_path)\n            else:\n                shutil.move(item, destination_path)\n\n            logger.info(\"%s: %s -> %s\", action, item.name, destination_path)\n            success_count += 1\n\n        except (OSError, PermissionError) as err:\n            logger.error(\"Skipping '%s': %s\", item.name, err)\n            skip_count += 1\n\n    return success_count, skip_count\n\n\ndef main():\n    parser = argparse.ArgumentParser(\n        description=\"Organize loose files into Year/Month folders based on modified date.\"\n    )\n    parser.add_argument(\"--source\", \"-s\", default=\"inbox\", help=\"Source folder containing loose files\")\n    parser.add_argument(\"--target\", \"-t\", default=\"archive\", help=\"Destination root directory\")\n    parser.add_argument(\"--format\", \"-f\", default=\"%Y/%m\", help=\"Date format string (default: '%%Y/%%m')\")\n    parser.add_argument(\"--copy\", action=\"store_true\", help=\"Copy files instead of moving them\")\n    parser.add_argument(\n        \"--execute\",\n        action=\"store_true\",\n        help=\"Apply real changes on disk. Defaults to safe dry-run mode.\",\n    )\n\n    args = parser.parse_args()\n    is_dry_run = not args.execute\n\n    if is_dry_run:\n        logger.warning(\"Running in DRY-RUN mode. Pass --execute to apply changes.\")\n\n    try:\n        src = Path(args.source)\n        dst = Path(args.target)\n        processed, skipped = organize_files(\n            source_dir=src,\n            target_dir=dst,\n            date_format=args.format,\n            copy_mode=args.copy,\n            dry_run=is_dry_run,\n        )\n        mode_label = \"Simulated\" if is_dry_run else \"Processed\"\n        logger.info(\"Done. %s %d files (%d skipped).\", mode_label, processed, skipped)\n    except Exception as err:\n        logger.error(\"Fatal error: %s\", err)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "# Monthly File Organizer\n\ntool.py groups disorganized directories into structured date-based subfolders using each file's modification timestamp.\n\n## SETUP\n\nThis utility uses Python's standard library (`pathlib`, `shutil`, `time`, and `argparse`). No third-party packages are required.\n\nMake the script executable:\n```bash\nchmod +x tool.py\n```\n\n## HOW IT WORKS\n\nBy default, `tool.py` executes in dry-run mode so you can preview changes safely without moving anything.\n\n1. Run a preview:\n```bash\npython3 tool.py --source ./inbox --target ./sorted\n```\n\n2. Execute the actual moves:\n```bash\npython3 tool.py --source ./inbox --target ./sorted --execute\n```\n\n3. Copy instead of move:\n```bash\npython3 tool.py --source ./inbox --target ./backup --copy --execute\n```\n\n4. Change folder hierarchy (e.g. flat `2024-11` instead of nested `2024/11`):\n```bash\npython3 tool.py --source ./inbox --target ./sorted --format \"%Y-%m\" --execute\n```\n\n## ADAPTING IT\n\n- Name Collision Protection: If a file with the same name already exists in the target directory, `tool.py` automatically appends an incrementing counter (`report_1.pdf`) to prevent accidental overwrites.\n- Custom Date Schemes: Pass standard strftime formatting strings to `--format` (for example, `%Y/Q%m` or `%Y/%B`).\n\n## LIMITATIONS\n\n- File timestamps reflect the file system's `st_mtime`. If files were copied between drives or downloaded together, their timestamps might reflect the download date rather than original creation date.\n- Hidden system files starting with `.` are ignored by default.\n\n## SUPPORT\n\nProvided as-is for workflow automation under CodeToCapital without warranty. Always back up your directories before running batch file operations with the `--execute` flag.\n",
+  "product_name": "Date-Based File Organizer CLI",
+  "product_blurb": "Automatically sort messy download and inbox folders into clean year and month directories using standard Python. Includes dry-run simulation mode and collision detection to protect against accidental overwrites.",
+  "pillar": "Rename, sort or clean up hundreds of files in one command"
+}

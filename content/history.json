@@ -19,7 +19,9 @@
     "2026-10-22T12:00:00+02:00": "r_3B50aaiLo",
     "2026-10-22T18:00:00+02:00": "fX6bsU_o37I",
     "2026-10-23T12:00:00+02:00": "yKPjt7-nxTk",
-    "2026-10-23T18:00:00+02:00": "YA8tUxCHM8k"
+    "2026-10-23T18:00:00+02:00": "YA8tUxCHM8k",
+    "2026-10-25T12:00:00+02:00": "oYlDPOPLkaI",
+    "2026-10-25T18:00:00+02:00": "Z_620THOzPM"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -105,6 +107,20 @@
       "pillar": "Spot duplicates or errors in business data with a few lines of pandas",
       "ep": 12,
       "publishAt": "2026-10-23T16:00:00.000Z"
+    },
+    "oYlDPOPLkaI": {
+      "slug": "schedule-uptime-monitor-python",
+      "title": "Monitor Website Uptime Hourly with 10 Lines of Python",
+      "pillar": "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)",
+      "ep": 13,
+      "publishAt": "2026-10-25T10:00:00.000Z"
+    },
+    "Z_620THOzPM": {
+      "slug": "daily-exchange-rates-to-csv",
+      "title": "Automate Daily Exchange Rates to CSV with Python",
+      "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet",
+      "ep": 14,
+      "publishAt": "2026-10-25T16:00:00.000Z"
     }
   },
   "replied": []
