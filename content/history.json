@@ -21,7 +21,9 @@
     "2026-10-23T12:00:00+02:00": "yKPjt7-nxTk",
     "2026-10-23T18:00:00+02:00": "YA8tUxCHM8k",
     "2026-10-25T12:00:00+02:00": "oYlDPOPLkaI",
-    "2026-10-25T18:00:00+02:00": "Z_620THOzPM"
+    "2026-10-25T18:00:00+02:00": "Z_620THOzPM",
+    "2026-10-26T12:00:00+02:00": "apm_13s5blA",
+    "2026-10-26T18:00:00+02:00": "oAl297wNrFE"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -121,6 +123,20 @@
       "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet",
       "ep": 14,
       "publishAt": "2026-10-25T16:00:00.000Z"
+    },
+    "apm_13s5blA": {
+      "slug": "format-csv-to-excel-report-python",
+      "title": "Format Raw CSV Data into Excel Reports with Python",
+      "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl",
+      "ep": 15,
+      "publishAt": "2026-10-26T10:00:00.000Z"
+    },
+    "oAl297wNrFE": {
+      "slug": "telegram-alert-page-changes-python",
+      "title": "Send Telegram Alerts When a Web Page Changes in Python",
+      "pillar": "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes",
+      "ep": 16,
+      "publishAt": "2026-10-26T16:00:00.000Z"
     }
   },
   "replied": []

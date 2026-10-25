@@ -1,0 +1,52 @@
+{
+  "slug": "split-master-csv-python",
+  "title": "Split One Master CSV into Client Files with Python",
+  "hook_text": "You don't need paid software here",
+  "description": "Stop manually filtering and copying rows into separate workbooks. This lightweight Python script splits any master CSV into clean individual files by column.",
+  "tags": [
+    "python",
+    "pandas",
+    "csv",
+    "automation",
+    "excel tips",
+    "data cleaning"
+  ],
+  "code": "import pandas as pd\n\ndf = pd.read_csv(\"master.csv\")\nfor name, data in df.groupby(\"Client\"):\n    out = f\"{name}.csv\"\n    data.to_csv(out, index=False)\n    print(f\"Saved {out}: {len(data)}\")",
+  "beats": [
+    {
+      "voice": "You do not need paid software to split a master spreadsheet for every client.",
+      "reveal": 1,
+      "badge": "MYTH BUSTED",
+      "output": ""
+    },
+    {
+      "voice": "Pandas reads your entire export in a single line.",
+      "reveal": 3,
+      "badge": "LOAD MASTER",
+      "output": ""
+    },
+    {
+      "voice": "Group every record by client and loop through each batch automatically.",
+      "reveal": 5,
+      "badge": "GROUP ROWS",
+      "output": ""
+    },
+    {
+      "voice": "Python saves isolated CSVs for each account with headers preserved.",
+      "reveal": 7,
+      "badge": "EXPORT FILES",
+      "output": "Saved Acme.csv: 42 rows"
+    },
+    {
+      "voice": "Always clean slash characters from company names so paths do not crash, but remember...",
+      "reveal": 7,
+      "badge": "FILE SAFETY",
+      "output": "Saved Acme.csv: 42 rows"
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Split a master CSV into separate files based on a column.\"\"\"\n\nimport argparse\nimport logging\nimport os\nimport re\nimport sys\nimport pandas as pd\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%H:%M:%S\",\n)\nlogger = logging.getLogger(\"csv_splitter\")\n\n\ndef sanitize_filename(name: str) -> str:\n    \"\"\"Remove or replace invalid characters for cross-platform filenames.\"\"\"\n    cleaned = re.sub(r'[\\\\/*?:\"<>|]', \"_\", str(name).strip())\n    return cleaned if cleaned else \"unnamed\"\n\n\ndef split_csv(input_path: str, split_col: str, output_dir: str, dry_run: bool = False) -> int:\n    \"\"\"Split master CSV into separate files by distinct values in split_col.\"\"\"\n    if not os.path.exists(input_path):\n        logger.error(\"Input file not found: %s\", input_path)\n        return 1\n\n    try:\n        df = pd.read_csv(input_path)\n    except Exception as exc:\n        logger.error(\"Failed to parse CSV file: %s\", exc)\n        return 1\n\n    if df.empty:\n        logger.warning(\"Master CSV is empty. Nothing to split.\")\n        return 0\n\n    if split_col not in df.columns:\n        logger.error(\n            \"Column '%s' not found. Available columns: %s\",\n            split_col,\n            \", \".join(df.columns),\n        )\n        return 1\n\n    if not dry_run:\n        os.makedirs(output_dir, exist_ok=True)\n\n    total_groups = 0\n    total_rows = 0\n\n    for value, group in df.groupby(split_col, dropna=False):\n        total_groups += 1\n        row_count = len(group)\n        total_rows += row_count\n\n        safe_label = sanitize_filename(\"missing\" if pd.isna(value) else str(value))\n        out_path = os.path.join(output_dir, f\"{safe_label}.csv\")\n\n        if dry_run:\n            logger.info(\"[DRY RUN] Would write %d rows to %s\", row_count, out_path)\n        else:\n            group.to_csv(out_path, index=False)\n            logger.info(\"Wrote %d rows to %s\", row_count, out_path)\n\n    mode = \"[DRY RUN] Planned\" if dry_run else \"Successfully exported\"\n    logger.info(\n        \"%s %d groups (%d total rows) from %s\",\n        mode,\n        total_groups,\n        total_rows,\n        input_path,\n    )\n    return 0\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Split a large CSV into multiple client or category files.\"\n    )\n    parser.add_argument(\n        \"-i\",\n        \"--input\",\n        required=True,\n        help=\"Path to the input master CSV file\",\n    )\n    parser.add_argument(\n        \"-c\",\n        \"--column\",\n        default=\"Client\",\n        help=\"Column name to group and split by (default: 'Client')\",\n    )\n    parser.add_argument(\n        \"-o\",\n        \"--output-dir\",\n        default=\"split_exports\",\n        help=\"Directory to store output CSV files (default: 'split_exports')\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Simulate splitting without creating any output files\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n    exit_code = split_csv(\n        input_path=args.input,\n        split_col=args.column,\n        output_dir=args.output_dir,\n        dry_run=args.dry_run,\n    )\n    sys.exit(exit_code)\n\n\nif __name__ == \"__main__\":\n    main()",
+  "kit_readme": "SETUP\nInstall dependencies using pip:\npip install pandas\n\nRun the tool from your command line:\npython tool.py --input master.csv --column Client\n\nHOW IT WORKS\ntool.py accepts any valid CSV spreadsheet and partitions it into distinct CSV files grouped by a specific target column. It creates the destination folder if it does not exist and sanitizes group values into safe filesystem names. It includes a dry-run flag so you can preview file counts and paths before writing anything to disk.\n\nADAPTING IT\n- To split by sales representative instead of Client:\n  python tool.py -i sales_data.csv -c \"Sales Rep\" -o rep_reports\n- To perform a safe dry-run preview:\n  python tool.py -i large_export.csv -c Department --dry-run\n- To handle compressed CSV exports, pandas natively handles .csv.gz input paths.\n\nLIMITATIONS\n- All grouped data must fit into available system memory when loaded by pandas.\n- Blank or null entries in the split column are grouped into a fallback file named 'missing.csv'.\n\nSUPPORT\nThis software is provided as-is without warranty of any kind. Verify output paths and run with --dry-run first on production spreadsheets.",
+  "product_name": "CSV Master Splitter CLI",
+  "product_blurb": "Quickly divide massive spreadsheet exports into separate, client-specific CSV files with automatic filename sanitization. Includes preview dry-run support to prevent accidental overwrites.",
+  "pillar": "Automate a boring spreadsheet or CSV task with Python"
+}

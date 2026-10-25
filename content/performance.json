@@ -1,22 +1,23 @@
 {
-  "updated": "2026-10-24T03:16:39.277050+00:00",
-  "videos_scored": 6,
+  "updated": "2026-10-25T03:16:15.367878+00:00",
+  "videos_scored": 8,
   "pillar_weights": {
-    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 1.04,
-    "Rename, sort or clean up hundreds of files in one command": 1.33,
+    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 1.25,
+    "Rename, sort or clean up hundreds of files in one command": 1.62,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.48,
     "Use an AI/LLM API call to classify, summarise or tag messy text": 0.3,
-    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 1.17
+    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.75
   },
   "top": [
     "Batch Rename and Clean Messy Files in Python",
     "Clean Inbox Newsletters with 9 Lines of Python",
     "Stop Using VLOOKUP: Reconcile Spreadsheets in Python",
     "Archive Newsletters Safely with Python IMAP",
-    "Sort Hundreds of Files into Folders with 8 Lines of Python"
+    "Schedule Daily Backups with 10 Lines of Python"
   ],
   "bottom": [
-    "Archive Newsletters Safely with Python IMAP",
+    "Classify Messy Text Fast with Python and Local AI",
     "Sort Hundreds of Files into Folders with 8 Lines of Python",
-    "Classify Messy Text Fast with Python and Local AI"
+    "Find Unpaid Invoices Across Two Sheets with Python"
   ]
 }

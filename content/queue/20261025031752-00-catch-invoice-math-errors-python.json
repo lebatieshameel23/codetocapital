@@ -1,0 +1,52 @@
+{
+  "slug": "catch-invoice-math-errors-python",
+  "title": "Catch Invoice Math Errors Fast with Python",
+  "hook_text": "Audit Invoices in 7 Lines of Python",
+  "description": "Spot billing calculation discrepancies across thousands of order rows in seconds using pandas. Export every mismatched total to a clean review spreadsheet automatically.",
+  "tags": [
+    "python",
+    "pandas",
+    "accounting",
+    "automation",
+    "small business",
+    "data audit"
+  ],
+  "code": "import pandas as pd\n\ndf = pd.read_csv(\"orders.csv\")\ncalc = (df[\"qty\"] * df[\"price\"]).round(2)\nbad = df[df[\"total\"].round(2) != calc]\nbad.to_csv(\"mismatches.csv\", index=False)\nprint(f\"Flagged {len(bad)} broken rows\")",
+  "beats": [
+    {
+      "voice": "Fourteen billing lines in this order export do not add up.",
+      "reveal": 0,
+      "badge": "AUDIT RESULTS",
+      "output": "Flagged 14 broken rows"
+    },
+    {
+      "voice": "Load the raw file into pandas with a single read line.",
+      "reveal": 3,
+      "badge": "LOAD ORDERS",
+      "output": ""
+    },
+    {
+      "voice": "Multiply quantity by unit price and test if it matches the billed total.",
+      "reveal": 5,
+      "badge": "CHECK MATH",
+      "output": ""
+    },
+    {
+      "voice": "Any row with a discrepancy gets isolated and exported to its own review sheet.",
+      "reveal": 7,
+      "badge": "EXPORT DISCREPANCIES",
+      "output": "Flagged 14 broken rows"
+    },
+    {
+      "voice": "This catches manual override errors, though tiered sales tax requires adjusting the expected formula before checking if...",
+      "reveal": 7,
+      "badge": "TAX LIMITATION",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"tool.py - Audit line items in CSV orders for math and rounding discrepancies.\"\"\"\n\nimport argparse\nimport logging\nfrom pathlib import Path\nimport pandas as pd\n\n\ndef setup_logger(verbose: bool) -> logging.Logger:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(\n        level=level,\n        format=\"%(asctime)s [%(levelname)s] %(message)s\",\n        datefmt=\"%H:%M:%S\",\n    )\n    return logging.getLogger(\"tool\")\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Scan order exports and isolate rows where qty * price != total.\"\n    )\n    parser.add_argument(\n        \"--input\",\n        \"-i\",\n        type=Path,\n        default=Path(\"orders.csv\"),\n        help=\"Path to incoming orders CSV file (default: orders.csv)\",\n    )\n    parser.add_argument(\n        \"--output\",\n        \"-o\",\n        type=Path,\n        default=Path(\"mismatches.csv\"),\n        help=\"Path for flagged discrepancy output CSV (default: mismatches.csv)\",\n    )\n    parser.add_argument(\n        \"--tolerance\",\n        \"-t\",\n        type=float,\n        default=0.01,\n        help=\"Maximum allowed difference in dollars to tolerate rounding (default: 0.01)\",\n    )\n    parser.add_argument(\n        \"--qty-col\",\n        default=\"qty\",\n        help=\"Column name for line item quantity (default: qty)\",\n    )\n    parser.add_argument(\n        \"--price-col\",\n        default=\"price\",\n        help=\"Column name for unit price (default: price)\",\n    )\n    parser.add_argument(\n        \"--total-col\",\n        default=\"total\",\n        help=\"Column name for line total amount (default: total)\",\n    )\n    parser.add_argument(\n        \"--verbose\",\n        \"-v\",\n        action=\"store_true\",\n        help=\"Enable debug output\",\n    )\n    return parser.parse_args()\n\n\ndef audit_orders(\n    input_path: Path,\n    output_path: Path,\n    qty_col: str,\n    price_col: str,\n    total_col: str,\n    tolerance: float,\n    log: logging.Logger,\n) -> int:\n    if not input_path.exists():\n        log.error(\"Input file not found: %s\", input_path)\n        return 1\n\n    try:\n        df = pd.read_csv(input_path)\n    except Exception as exc:\n        log.error(\"Failed to parse %s: %s\", input_path, exc)\n        return 1\n\n    required_cols = {qty_col, price_col, total_col}\n    missing = required_cols - set(df.columns)\n    if missing:\n        log.error(\"Missing required columns in CSV: %s\", \", \".join(missing))\n        return 1\n\n    # Coerce numeric values, setting malformed values to NaN\n    numeric_df = df.copy()\n    for col in [qty_col, price_col, total_col]:\n        numeric_df[col] = pd.to_numeric(numeric_df[col], errors=\"coerce\")\n\n    # Detect non-numeric rows\n    nan_mask = numeric_df[[qty_col, price_col, total_col]].isna().any(axis=1)\n    nan_count = int(nan_mask.sum())\n    if nan_count > 0:\n        log.warning(\"Found %d rows with non-numeric quantity or pricing values\", nan_count)\n\n    # Compute expected totals and variance\n    expected = (numeric_df[qty_col] * numeric_df[price_col]).round(2)\n    diff = (numeric_df[total_col] - expected).abs()\n\n    mismatch_mask = nan_mask | (diff > tolerance)\n    flagged = df[mismatch_mask].copy()\n    flagged[\"expected_total\"] = expected\n    flagged[\"discrepancy\"] = (numeric_df[total_col] - expected).round(2)\n\n    total_rows = len(df)\n    mismatched_rows = len(flagged)\n\n    if mismatched_rows == 0:\n        log.info(\"Audit clean: %d rows examined, zero calculation errors found.\", total_rows)\n        return 0\n\n    try:\n        flagged.to_csv(output_path, index=False)\n        log.warning(\n            \"Audit flagged %d of %d rows (%.1f%%). Saved review file to: %s\",\n            mismatched_rows,\n            total_rows,\n            (mismatched_rows / total_rows) * 100,\n            output_path,\n        )\n    except Exception as exc:\n        log.error(\"Failed to save output to %s: %s\", output_path, exc)\n        return 1\n\n    return 0\n\n\ndef main() -> None:\n    args = parse_args()\n    log = setup_logger(args.verbose)\n    exit_code = audit_orders(\n        input_path=args.input,\n        output_path=args.output,\n        qty_col=args.qty_col,\n        price_col=args.price_col,\n        total_col=args.total_col,\n        tolerance=args.tolerance,\n        log=log,\n    )\n    raise SystemExit(exit_code)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9 or newer is installed on your system.\n2. Install required dependencies:\n   pip install pandas\n3. Place tool.py in your project directory alongside your CSV export.\n\nHOW IT WORKS\ntool.py reads your transaction or invoice line items from a CSV file. It calculates the expected row total as (quantity * unit price) rounded to two decimal places, compares it against the recorded line total, and exports any records with discrepancies exceeding your specified tolerance threshold into a dedicated review CSV.\n\nRun with defaults (expects orders.csv with columns qty, price, total):\n   python tool.py\n\nCustom file names and column mappings:\n   python tool.py -i sales_export.csv -o bad_rows.csv --qty-col Quantity --price-col UnitPrice --total-col LineTotal\n\nAdjust rounding tolerance (e.g., allow up to 2 cents difference):\n   python tool.py -t 0.02\n\nADAPTING IT\n- Tax & Discounts: If your data includes separate tax or discount percentage columns, add those columns to the calculation formula in the audit_orders function.\n- Currencies: For currencies with non-standard decimal places (like JPY with 0 or KWD with 3), adjust the round(2) call accordingly.\n\nLIMITATIONS\n- The script evaluates each line independently. Multi-row order-level discounts or complex tiered shipping charges applied post-total are not automatically redistributed.\n- Non-numeric strings in numeric fields will be flagged as mismatched errors for manual inspection.\n\nSUPPORT\nThis script is provided as-is without warranty. Please test on a copy of your export files before relying on output for accounting adjustments.",
+  "product_name": "Invoice Math Audit CLI",
+  "product_blurb": "Quickly verify exported billing rows by checking calculated line totals against recorded charges. Flags bad formulas, manual entry mistakes, and non-numeric inputs into a clean discrepancy report.",
+  "pillar": "Spot duplicates or errors in business data with a few lines of pandas"
+}
