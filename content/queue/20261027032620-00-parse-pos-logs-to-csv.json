@@ -1,0 +1,52 @@
+{
+  "slug": "parse-pos-logs-to-csv",
+  "title": "Parse Daily Sales Logs into CSV with 9 Lines of Python",
+  "hook_text": "Pull daily totals from messy logs fast",
+  "description": "Stop copying and pasting card terminal closing summaries by hand into your bookkeeping sheet. This simple Python script scans your batch text logs and compiles dates and totals into a single CSV.",
+  "tags": [
+    "python",
+    "automation",
+    "smallbusiness",
+    "bookkeeping",
+    "regex",
+    "csv"
+  ],
+  "code": "from pathlib import Path\nimport re, csv\ndata = []\nfor f in Path(\"logs\").glob(\"*.txt\"):\n    txt = f.read_text()\n    val = re.findall(r\"Total: \\$(\\S+)\", txt)\n    if val: data.append((f.name, val[0]))\nwith open(\"totals.csv\", \"w\") as out:\n    csv.writer(out).writerows(data)",
+  "beats": [
+    {
+      "voice": "Thirty daily register logs compiled into one clean spreadsheet without opening a single file.",
+      "reveal": 0,
+      "badge": "Result",
+      "output": "Wrote 30 daily totals to totals.csv"
+    },
+    {
+      "voice": "Say you spend twenty minutes each week hand-keying daily register summaries. We scan every text file in the logs folder instead.",
+      "reveal": 4,
+      "badge": "Scan folder",
+      "output": ""
+    },
+    {
+      "voice": "We read the file text and use regex to grab the exact dollar amount right after the total label.",
+      "reveal": 7,
+      "badge": "Regex match",
+      "output": ""
+    },
+    {
+      "voice": "Then we dump every filename and amount directly into a CSV file ready for your accounting sheet.",
+      "reveal": 9,
+      "badge": "Export CSV",
+      "output": "totals.csv: 30 rows exported"
+    },
+    {
+      "voice": "It only handles text files without OCR, but it saves hours if your terminal exports files like these.",
+      "reveal": 9,
+      "badge": "Clean text only",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py: Parse structured metrics from plain text log reports into CSV.\"\"\"\n\nimport argparse\nimport csv\nimport logging\nfrom pathlib import Path\nimport re\nimport sys\n\n\ndef parse_args():\n    parser = argparse.ArgumentParser(\n        description=\"Extract key figures from daily text logs into a CSV summary.\"\n    )\n    parser.add_argument(\n        \"--dir\",\n        type=Path,\n        default=Path(\"logs\"),\n        help=\"Directory containing log text files (default: logs)\",\n    )\n    parser.add_argument(\n        \"--pattern\",\n        type=str,\n        default=r\"Total:\\s*\\$([\\d,.]+)\",\n        help=\"Regex pattern with one capturing group for the target value\",\n    )\n    parser.add_argument(\n        \"--out\",\n        type=Path,\n        default=Path(\"summary.csv\"),\n        help=\"Output CSV destination (default: summary.csv)\",\n    )\n    parser.add_argument(\n        \"--verbose\",\n        action=\"store_true\",\n        help=\"Enable detailed debug logging\",\n    )\n    return parser.parse_args()\n\n\ndef setup_logging(verbose: bool):\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(\n        level=level,\n        format=\"%(levelname)s: %(message)s\",\n    )\n\n\ndef extract_totals(log_dir: Path, pattern_str: str):\n    try:\n        pattern = re.compile(pattern_str)\n    except re.error as e:\n        logging.error(f\"Invalid regular expression pattern: {e}\")\n        sys.exit(1)\n\n    if not log_dir.exists() or not log_dir.is_dir():\n        logging.error(f\"Input directory does not exist or is not a directory: {log_dir}\")\n        sys.exit(1)\n\n    files = sorted(log_dir.glob(\"*.txt\"))\n    if not files:\n        logging.warning(f\"No .txt files found in '{log_dir}'\")\n        return []\n\n    results = []\n    for file_path in files:\n        try:\n            content = file_path.read_text(encoding=\"utf-8\", errors=\"replace\")\n            match = pattern.search(content)\n            if match:\n                extracted = match.group(1).replace(\",\", \"\")\n                results.append((file_path.name, extracted))\n                logging.debug(f\"Matched {file_path.name}: {extracted}\")\n            else:\n                logging.warning(f\"Pattern not found in: {file_path.name}\")\n        except OSError as e:\n            logging.error(f\"Could not read {file_path.name}: {e}\")\n\n    return results\n\n\ndef write_csv(results, out_path: Path):\n    if not results:\n        logging.info(\"No matching data to export.\")\n        return\n\n    try:\n        with open(out_path, \"w\", newline=\"\", encoding=\"utf-8\") as f:\n            writer = csv.writer(f)\n            writer.writerow([\"Filename\", \"ExtractedValue\"])\n            writer.writerows(results)\n        logging.info(f\"Successfully wrote {len(results)} rows to {out_path}\")\n    except OSError as e:\n        logging.error(f\"Failed to write output CSV {out_path}: {e}\")\n        sys.exit(1)\n\n\ndef main():\n    args = parse_args()\n    setup_logging(args.verbose)\n    logging.info(f\"Scanning '{args.dir}' for log files...\")\n    data = extract_totals(args.dir, args.pattern)\n    write_csv(data, args.out)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed on your computer.\n2. No third-party packages are required; this script uses only standard library modules (pathlib, re, csv, argparse, logging).\n3. Save tool.py in your project directory alongside a folder containing your log files (default folder name: logs).\n\nHOW IT WORKS\nRun the script from your terminal:\n    python tool.py\n\nThe script will scan all .txt files in the specified directory, apply a regular expression to locate your daily settlement balance or target metric, and write a clean two-column spreadsheet containing the filename and extracted number directly into summary.csv.\n\nADAPTING IT\nYou can customize the input folder, regular expression pattern, and destination file without editing code:\n    python tool.py --dir /path/to/pos_exports --pattern \"Net Total:\\s*\\$([\\d,.]+)\" --out daily_sales.csv\n\nUse the --verbose flag if you want to inspect file-by-file matching progress in the terminal:\n    python tool.py --verbose\n\nLIMITATIONS\nThis tool is designed strictly for plain text exports (.txt, .log, .tsv). It does not parse binary formats like scanned image PDFs or Excel files without conversion, and it requires the text structure of target numbers to follow a consistent naming pattern.\n\nSUPPORT\nProvided as-is under CodeToCapital guidelines. No warranty is expressed or implied.",
+  "product_name": "Log-to-CSV Daily Total Extractor",
+  "product_blurb": "Extract balances, sales totals, and batch figures from hundreds of plain text POS closing logs into a tidy CSV file. Built for small business owners and bookkeepers looking to eliminate manual daily register data entry.",
+  "pillar": "Extract data from PDFs or text files you own with a short script"
+}

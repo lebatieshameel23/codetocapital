@@ -1,14 +1,15 @@
 {
-  "updated": "2026-10-26T03:21:18.778471+00:00",
-  "videos_scored": 10,
+  "updated": "2026-10-27T03:20:01.353223+00:00",
+  "videos_scored": 12,
   "pillar_weights": {
-    "Extract data from PDFs or text files you own with a short script": 2.98,
-    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 1.0,
-    "Rename, sort or clean up hundreds of files in one command": 1.28,
-    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.39,
+    "Extract data from PDFs or text files you own with a short script": 4.0,
+    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 1.07,
+    "Rename, sort or clean up hundreds of files in one command": 1.02,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.43,
     "Use an AI/LLM API call to classify, summarise or tag messy text": 0.3,
-    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.64,
-    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.58
+    "Spot duplicates or errors in business data with a few lines of pandas": 0.3,
+    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.68,
+    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.67
   },
   "top": [
     "Extract Invoice Totals from PDFs with 10 Lines of Python",
@@ -18,8 +19,8 @@
     "Archive Newsletters Safely with Python IMAP"
   ],
   "bottom": [
-    "Classify Messy Text Fast with Python and Local AI",
     "Find Unpaid Invoices Across Two Sheets with Python",
-    "Sort Hundreds of Files into Folders with 8 Lines of Python"
+    "Sort Hundreds of Files into Folders with 8 Lines of Python",
+    "Find Duplicate Charges Fast with 8 Lines of Python"
   ]
 }
