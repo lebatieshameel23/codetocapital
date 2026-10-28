@@ -25,7 +25,9 @@
     "2026-10-26T12:00:00+02:00": "apm_13s5blA",
     "2026-10-26T18:00:00+02:00": "oAl297wNrFE",
     "2026-10-28T12:00:00+02:00": "TKZNm5iUvjU",
-    "2026-10-28T18:00:00+02:00": "fXYWGArg9bU"
+    "2026-10-28T18:00:00+02:00": "fXYWGArg9bU",
+    "2026-10-29T12:00:00+02:00": "1BJKAtvE1NM",
+    "2026-10-29T18:00:00+02:00": "E2JGrGYHiZ8"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -153,6 +155,20 @@
       "pillar": "Rename, sort or clean up hundreds of files in one command",
       "ep": 18,
       "publishAt": "2026-10-28T16:00:00.000Z"
+    },
+    "1BJKAtvE1NM": {
+      "slug": "catch-invoice-math-errors-python",
+      "title": "Catch Invoice Math Errors Fast with Python",
+      "pillar": "Spot duplicates or errors in business data with a few lines of pandas",
+      "ep": 19,
+      "publishAt": "2026-10-29T10:00:00.000Z"
+    },
+    "E2JGrGYHiZ8": {
+      "slug": "split-master-csv-python",
+      "title": "Split One Master CSV into Client Files with Python",
+      "pillar": "Automate a boring spreadsheet or CSV task with Python",
+      "ep": 20,
+      "publishAt": "2026-10-29T16:00:00.000Z"
     }
   },
   "replied": []
