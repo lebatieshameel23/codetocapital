@@ -1,15 +1,16 @@
 {
-  "updated": "2026-10-28T03:28:12.712983+00:00",
-  "videos_scored": 12,
+  "updated": "2026-10-29T03:30:08.311828+00:00",
+  "videos_scored": 14,
   "pillar_weights": {
-    "Extract data from PDFs or text files you own with a short script": 3.9,
-    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 1.05,
-    "Rename, sort or clean up hundreds of files in one command": 1.07,
-    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.42,
+    "Extract data from PDFs or text files you own with a short script": 4.26,
+    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 1.15,
+    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.3,
+    "Rename, sort or clean up hundreds of files in one command": 1.17,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.58,
     "Use an AI/LLM API call to classify, summarise or tag messy text": 0.3,
     "Spot duplicates or errors in business data with a few lines of pandas": 0.3,
-    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.69,
-    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.65
+    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.76,
+    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.7
   },
   "top": [
     "Extract Invoice Totals from PDFs with 10 Lines of Python",
@@ -19,7 +20,7 @@
     "Archive Newsletters Safely with Python IMAP"
   ],
   "bottom": [
-    "Find Unpaid Invoices Across Two Sheets with Python",
+    "Automate Daily Exchange Rates to CSV with Python",
     "Sort Hundreds of Files into Folders with 8 Lines of Python",
     "Find Duplicate Charges Fast with 8 Lines of Python"
   ]

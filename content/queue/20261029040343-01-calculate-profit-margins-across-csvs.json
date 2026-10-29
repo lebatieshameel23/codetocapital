@@ -1,0 +1,52 @@
+{
+  "slug": "calculate-profit-margins-across-csvs",
+  "title": "Calculate Profit Margins Across Two CSVs with Python",
+  "hook_text": "This eats an hour every Friday.",
+  "description": "Reconcile supplier costs with your retail pricing catalog in a single automated step. Stop wrestling with broken VLOOKUP formulas and calculate product margins cleanly.",
+  "tags": [
+    "python",
+    "pandas",
+    "automation",
+    "smallbusiness",
+    "excel",
+    "spreadsheets"
+  ],
+  "code": "import pandas as pd\n\nstore = pd.read_csv(\"store.csv\")\ncosts = pd.read_csv(\"costs.csv\")\ndf = store.merge(costs, on=\"sku\")\ndf[\"margin\"] = df[\"price\"] - df[\"cost\"]\ndf.to_csv(\"margins.csv\", index=False)\nprint(f\"Wrote {len(df)} margin records\")",
+  "beats": [
+    {
+      "voice": "This task eats an hour every Friday. Here is how to make it a single command.",
+      "reveal": 2,
+      "badge": "MERGE IN SECONDS",
+      "output": ""
+    },
+    {
+      "voice": "Read your retail pricing sheet and the new supplier invoice export into two pandas tables.",
+      "reveal": 4,
+      "badge": "LOAD CSVS",
+      "output": ""
+    },
+    {
+      "voice": "Join them on product SKU with one merge, then calculate your margin across every row instantly.",
+      "reveal": 6,
+      "badge": "JOIN ON SKU",
+      "output": ""
+    },
+    {
+      "voice": "Export the clean audit to CSV, leaving zero room for broken spreadsheet formulas.",
+      "reveal": 7,
+      "badge": "EXPORT CLEAN DATA",
+      "output": "Wrote 412 margin records"
+    },
+    {
+      "voice": "Just format SKUs as text so dropped zeros do not skip matches, because...",
+      "reveal": 8,
+      "badge": "CHECK SKU FORMATS",
+      "output": "Wrote 412 margin records"
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Merge store catalog and supplier costs to calculate margins.\"\"\"\n\nimport argparse\nimport logging\nfrom pathlib import Path\nimport pandas as pd\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n)\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Merge price catalog with cost sheets and calculate margins.\"\n    )\n    parser.add_argument(\n        \"--store\",\n        type=Path,\n        required=True,\n        help=\"Path to catalog/store CSV.\",\n    )\n    parser.add_argument(\n        \"--costs\",\n        type=Path,\n        required=True,\n        help=\"Path to vendor/costs CSV.\",\n    )\n    parser.add_argument(\n        \"--out\",\n        type=Path,\n        default=Path(\"margins.csv\"),\n        help=\"Path for output CSV (default: margins.csv).\",\n    )\n    parser.add_argument(\n        \"--key\",\n        default=\"sku\",\n        help=\"Column name to join on (default: sku).\",\n    )\n    parser.add_argument(\n        \"--price-col\",\n        default=\"price\",\n        help=\"Column name for retail price (default: price).\",\n    )\n    parser.add_argument(\n        \"--cost-col\",\n        default=\"cost\",\n        help=\"Column name for unit cost (default: cost).\",\n    )\n    parser.add_argument(\n        \"--how\",\n        choices=[\"inner\", \"left\", \"right\", \"outer\"],\n        default=\"inner\",\n        help=\"Join method (default: inner).\",\n    )\n    return parser.parse_args()\n\n\ndef run_merge(\n    store_path: Path,\n    costs_path: Path,\n    out_path: Path,\n    key: str,\n    price_col: str,\n    cost_col: str,\n    how: str,\n) -> None:\n    if not store_path.exists():\n        raise FileNotFoundError(f\"Store file not found: {store_path}\")\n    if not costs_path.exists():\n        raise FileNotFoundError(f\"Costs file not found: {costs_path}\")\n\n    logging.info(\"Reading %s and %s...\", store_path.name, costs_path.name)\n    # Read join keys as string to preserve leading zeros\n    store_df = pd.read_csv(store_path, dtype={key: str})\n    costs_df = pd.read_csv(costs_path, dtype={key: str})\n\n    for df, name in ((store_df, \"Store\"), (costs_df, \"Costs\")):\n        if key not in df.columns:\n            raise KeyError(f\"Key '{key}' missing from {name} CSV columns: {list(df.columns)}\")\n        df[key] = df[key].astype(str).str.strip()\n\n    if price_col not in store_df.columns:\n        raise KeyError(f\"Price column '{price_col}' missing from store CSV.\")\n    if cost_col not in costs_df.columns:\n        raise KeyError(f\"Cost column '{cost_col}' missing from costs CSV.\")\n\n    # Ensure numeric types for margin calculation\n    store_df[price_col] = pd.to_numeric(store_df[price_col], errors=\"coerce\")\n    costs_df[cost_col] = pd.to_numeric(costs_df[cost_col], errors=\"coerce\")\n\n    merged = store_df.merge(costs_df, on=key, how=how, suffixes=(\"_store\", \"_vendor\"))\n    merged[\"margin\"] = (merged[price_col] - merged[cost_col]).round(2)\n    merged[\"margin_pct\"] = ((merged[\"margin\"] / merged[price_col]) * 100).round(1)\n\n    out_path.parent.mkdir(parents=True, exist_ok=True)\n    merged.to_csv(out_path, index=False)\n\n    logging.info(\"Successfully merged %d rows into %s\", len(merged), out_path)\n    if how == \"inner\":\n        unmatched = len(store_df) - len(merged)\n        if unmatched > 0:\n            logging.warning(\"%d items from store CSV had no cost match.\", unmatched)\n\n\ndef main() -> None:\n    args = parse_args()\n    try:\n        run_merge(\n            store_path=args.store,\n            costs_path=args.costs,\n            out_path=args.out,\n            key=args.key,\n            price_col=args.price_col,\n            cost_col=args.cost_col,\n            how=args.how,\n        )\n    except Exception as exc:\n        logging.error(\"Merge failed: %s\", exc)\n        raise SystemExit(1) from exc\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed.\n2. Install required dependencies:\n   pip install pandas\n\nHOW IT WORKS\ntool.py reads your retail catalog and vendor cost sheet as text to protect leading zeros, strips accidental whitespace from identifiers, and joins the datasets on a common SKU or ID. It then calculates absolute dollar margin and margin percentage across all matched products, outputting a consolidated CSV.\n\nRun with:\npython tool.py --store catalog.csv --costs vendor_costs.csv --out margins.csv\n\nADAPTING IT\n- Custom column names: pass --key barcode --price-col retail --cost-col wholesale\n- Audit unlisted products: change --how left to keep all catalog items even if costs are currently missing.\n- Add custom freight/shipping deductions in run_merge() before margin calculation.\n\nLIMITATIONS\n- Large files must fit comfortably in available system RAM.\n- Both sheets must have unique keys per row or pandas will generate cartesian combinations for duplicated keys.\n\nSUPPORT\nProvided as-is without warranty. Open an issue or modify tool.py directly for internal workflow requirements.",
+  "product_name": "Spreadsheet Margin & Price Reconciler",
+  "product_blurb": "Quickly match retail catalogs with supplier invoices to compute margins and spot missing cost data. Built for operators tired of broken Excel lookups and manual pricing audits.",
+  "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)"
+}
