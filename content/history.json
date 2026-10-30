@@ -27,7 +27,9 @@
     "2026-10-28T12:00:00+02:00": "TKZNm5iUvjU",
     "2026-10-28T18:00:00+02:00": "fXYWGArg9bU",
     "2026-10-29T12:00:00+02:00": "1BJKAtvE1NM",
-    "2026-10-29T18:00:00+02:00": "E2JGrGYHiZ8"
+    "2026-10-29T18:00:00+02:00": "E2JGrGYHiZ8",
+    "2026-10-31T12:00:00+02:00": "BPoDxDEJH5I",
+    "2026-10-31T18:00:00+02:00": "kzh8Sv2GdKo"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -169,6 +171,20 @@
       "pillar": "Automate a boring spreadsheet or CSV task with Python",
       "ep": 20,
       "publishAt": "2026-10-29T16:00:00.000Z"
+    },
+    "BPoDxDEJH5I": {
+      "slug": "parse-pos-logs-to-csv",
+      "title": "Parse Daily Sales Logs into CSV with 9 Lines of Python",
+      "pillar": "Extract data from PDFs or text files you own with a short script",
+      "ep": 21,
+      "publishAt": "2026-10-31T10:00:00.000Z"
+    },
+    "kzh8Sv2GdKo": {
+      "slug": "calculate-profit-margins-across-csvs",
+      "title": "Calculate Profit Margins Across Two CSVs with Python",
+      "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)",
+      "ep": 22,
+      "publishAt": "2026-10-31T16:00:00.000Z"
     }
   },
   "replied": []

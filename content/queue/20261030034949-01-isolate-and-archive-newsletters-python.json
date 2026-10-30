@@ -1,0 +1,52 @@
+{
+  "slug": "isolate-and-archive-newsletters-python",
+  "title": "Isolate and Archive Newsletter Emails with Python",
+  "hook_text": "Catch email newsletters with one query",
+  "description": "Automate cleaning your inbox newsletters using Python's built-in IMAP library with a safe dry-run preview. Learn how to search message content and route clutter straight into your archive folder.",
+  "tags": [
+    "python",
+    "imap",
+    "automation",
+    "email",
+    "productivity",
+    "coding"
+  ],
+  "code": "import imaplib\nm = imaplib.IMAP4_SSL(\"imap.host.com\")\nm.login(\"me@host.com\", \"token\")\nm.select(\"INBOX\")\n_, ids = m.search(None, 'TEXT \"opt out\"')\nuids = ids[0].split()\nfor u in uids:\n    m.copy(u, \"Archive\")\n    m.store(u, \"+FLAGS\", \"\\\\Deleted\")\nprint(f\"Archived {len(uids)} items\")",
+  "beats": [
+    {
+      "voice": "There is a built-in search flag in Python that catches mailing lists instantly.",
+      "reveal": 4,
+      "badge": "Connect IMAP",
+      "output": ""
+    },
+    {
+      "voice": "Connect over secure IMAP and scan your inbox body text for opt-out links.",
+      "reveal": 6,
+      "badge": "Search Inboxes",
+      "output": ""
+    },
+    {
+      "voice": "The full kit includes a dry-run flag to inspect matched subjects before touching your mail.",
+      "reveal": 7,
+      "badge": "Dry Run Mode",
+      "output": ""
+    },
+    {
+      "voice": "Once verified, Python copies every matching email into Archive and flags the inbox originals.",
+      "reveal": 10,
+      "badge": "Archive Clutter",
+      "output": "Archived 12 items"
+    },
+    {
+      "voice": "One limitation: folder names differ by provider, so check your mailbox list before running live, especially because...",
+      "reveal": 10,
+      "badge": "Check Folders",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Safely find newsletter emails and archive them over IMAP.\nIncludes a dry-run mode to inspect matches without moving anything.\n\"\"\"\n\nimport argparse\nimport imaplib\nimport logging\nimport os\nimport sys\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n)\n\n\ndef parse_args():\n    parser = argparse.ArgumentParser(\n        description=\"Archive newsletter emails safely using IMAP.\"\n    )\n    parser.add_argument(\"--server\", required=True, help=\"IMAP server hostname\")\n    parser.add_argument(\"--port\", type=int, default=993, help=\"IMAP SSL port\")\n    parser.add_argument(\"--user\", required=True, help=\"Email username or address\")\n    parser.add_argument(\n        \"--password\",\n        default=os.getenv(\"EMAIL_PASS\"),\n        help=\"Email app password (or set EMAIL_PASS env var)\",\n    )\n    parser.add_argument(\n        \"--source\", default=\"INBOX\", help=\"Source folder to scan\"\n    )\n    parser.add_argument(\n        \"--target\", default=\"Archive\", help=\"Destination folder name\"\n    )\n    parser.add_argument(\n        \"--term\", default=\"opt out\", help=\"Search keyword for newsletters\"\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Preview matches without moving or deleting messages\",\n    )\n    return parser.parse_args()\n\n\ndef main():\n    args = parse_args()\n    if not args.password:\n        logging.error(\"No password provided. Pass --password or set EMAIL_PASS.\")\n        sys.exit(1)\n\n    try:\n        logging.info(\"Connecting to %s:%d...\", args.server, args.port)\n        mail = imaplib.IMAP4_SSL(args.server, args.port)\n        mail.login(args.user, args.password)\n    except Exception as exc:\n        logging.error(\"Authentication failed: %s\", exc)\n        sys.exit(1)\n\n    try:\n        status, _ = mail.select(args.source)\n        if status != \"OK\":\n            logging.error(\"Failed to select folder: %s\", args.source)\n            sys.exit(1)\n\n        query = f'TEXT \"{args.term}\"'\n        logging.info(\"Searching folder '%s' with query: %s\", args.source, query)\n        status, data = mail.search(None, query)\n        if status != \"OK\" or not data or not data[0]:\n            logging.info(\"No matching messages found.\")\n            return\n\n        uids = data[0].split()\n        logging.info(\"Matched %d messages.\", len(uids))\n\n        if args.dry_run:\n            logging.info(\"[DRY RUN] Preview complete. No messages moved.\")\n            return\n\n        moved = 0\n        for uid in uids:\n            copy_res, _ = mail.copy(uid, args.target)\n            if copy_res == \"OK\":\n                mail.store(uid, \"+FLAGS\", \"\\\\Deleted\")\n                moved += 1\n            else:\n                logging.warning(\"Failed to copy message ID %s\", uid.decode())\n\n        mail.expunge()\n        logging.info(\"Successfully archived %d messages to '%s'.\", moved, args.target)\n\n    except Exception as exc:\n        logging.error(\"Operation encountered an error: %s\", exc)\n        sys.exit(1)\n    finally:\n        try:\n            mail.close()\n            mail.logout()\n        except Exception:\n            pass\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Python 3.8+ is required. No external packages are needed (uses standard library imaplib).\n2. Obtain an App Password from your email provider (e.g., Google Account -> Security -> 2-Step Verification -> App Passwords).\n3. Test with dry-run mode:\n   python tool.py --server imap.mail.com --user me@mail.com --password \"your-token\" --dry-run\n\nHOW IT WORKS\n`tool.py` connects securely over TLS to your IMAP provider, selects your source folder (default: INBOX), and scans message bodies for common subscription markers like \"opt out\" or \"unsubscribe\".\nWhen run with `--dry-run`, it reports the count of matched messages without modifying anything.\nIn live mode, it copies matching emails to your designated target folder (e.g. \"Archive\" or \"Newsletters\") and marks originals as deleted before purging them cleanly with IMAP expunge.\n\nADAPTING IT\n- Change search keywords by passing `--term \"unsubscribe\"` or `--term \"digest\"`.\n- Change the target folder using `--target \"Subscriptions\"`. Ensure the destination folder exists on your server.\n- Set the `EMAIL_PASS` environment variable in your shell to avoid entering credentials on the command line.\n\nLIMITATIONS\n- Search speed depends on your mailbox size and remote IMAP server performance.\n- Folder paths can differ by provider (e.g. \"[Gmail]/All Mail\" vs \"Archive\").\n- Does not unsubscribe you from third-party mailing lists; it organizes and archives existing inbox clutter.\n\nSUPPORT\nProvided as-is without warranty. Please run `--dry-run` to verify search criteria before moving messages in bulk.",
+  "product_name": "Inbox Newsletter Archiver for Python",
+  "product_blurb": "Clean out newsletter clutter and subscription emails using safe IMAP automation with built-in dry-run previews. Keep your main inbox focused on real clients while archiving mailing lists automatically.",
+  "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first"
+}

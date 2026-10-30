@@ -1,0 +1,52 @@
+{
+  "slug": "tag-customer-tickets-python-ollama",
+  "title": "Tag Customer Tickets Fast with 8 Lines of Python",
+  "hook_text": "Tag messy support tickets instantly.",
+  "description": "Automatically tag customer support tickets by category and urgency using a local Python AI call. Stop sorting messy inboxes manually and keep your data private.",
+  "tags": [
+    "python",
+    "ai",
+    "ollama",
+    "automation",
+    "smallbusiness",
+    "productivity"
+  ],
+  "code": "import requests\nurl = \"http://localhost:11434/api/generate\"\nprompt = \"Tag (Urgent/Normal): Broken box\"\npayload = {\"model\": \"llama3.2\",\n           \"prompt\": prompt,\n           \"stream\": False}\nres = requests.post(url, json=payload)\nprint(res.json()[\"response\"].strip())",
+  "beats": [
+    {
+      "voice": "Every messy ticket tagged and sorted automatically.",
+      "reveal": 0,
+      "badge": "Done in 8 lines",
+      "output": "Urgent"
+    },
+    {
+      "voice": "Instead of reading hundreds of angry customer notes by hand, point Python at a local model.",
+      "reveal": 3,
+      "badge": "Target model",
+      "output": ""
+    },
+    {
+      "voice": "Send the raw text payload to Ollama running right on your machine, zero cloud fees required.",
+      "reveal": 6,
+      "badge": "Free API call",
+      "output": ""
+    },
+    {
+      "voice": "The API evaluates the tone and spits out your clean category in seconds.",
+      "reveal": 8,
+      "badge": "Instant tag",
+      "output": "Urgent"
+    },
+    {
+      "voice": "Local models need eight gigabytes of RAM to stay snappy, but once loaded, you can have...",
+      "reveal": 8,
+      "badge": "RAM required",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Batch tag support tickets using a local Ollama instance.\"\"\"\nimport argparse\nimport csv\nimport logging\nimport sys\nimport requests\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\n\n\ndef classify_ticket(text: str, endpoint: str, model: str, timeout: int = 30) -> str:\n    \"\"\"Send text to local Ollama API and return classification label.\"\"\"\n    prompt = (\n        \"Classify the following customer ticket into exactly one tag: \"\n        \"[Urgent, Billing, Technical, General Inquiry]. \"\n        f\"Reply with only the tag name.\\n\\nTicket: {text}\"\n    )\n    payload = {\n        \"model\": model,\n        \"prompt\": prompt,\n        \"stream\": False,\n    }\n    try:\n        res = requests.post(f\"{endpoint}/api/generate\", json=payload, timeout=timeout)\n        res.raise_for_status()\n        data = res.json()\n        return data.get(\"response\", \"Unknown\").strip()\n    except requests.exceptions.RequestException as err:\n        logging.error(\"API request failed: %s\", err)\n        return \"Error\"\n\n\ndef process_tickets(input_csv: str, output_csv: str, endpoint: str, model: str, dry_run: bool = False):\n    \"\"\"Read tickets from CSV, classify them, and export annotated results.\"\"\"\n    try:\n        with open(input_csv, mode=\"r\", encoding=\"utf-8-sig\") as f:\n            reader = csv.DictReader(f)\n            if not reader.fieldnames or \"ticket_text\" not in reader.fieldnames:\n                logging.error(\"CSV must contain a 'ticket_text' column.\")\n                sys.exit(1)\n            rows = list(reader)\n    except FileNotFoundError:\n        logging.error(\"Input file not found: %s\", input_csv)\n        sys.exit(1)\n\n    logging.info(\"Found %d tickets to process.\", len(rows))\n    fieldnames = list(reader.fieldnames) + [\"predicted_tag\"]\n\n    annotated = []\n    for idx, row in enumerate(rows, start=1):\n        text = row.get(\"ticket_text\", \"\").strip()\n        if not text:\n            row[\"predicted_tag\"] = \"Empty\"\n            annotated.append(row)\n            continue\n\n        if dry_run:\n            logging.info(\"[DRY-RUN] Row %d: %s... -> [Tag Preview]\", idx, text[:35])\n            row[\"predicted_tag\"] = \"DryRun-Skipped\"\n        else:\n            tag = classify_ticket(text, endpoint, model)\n            logging.info(\"Row %d: %s... -> %s\", idx, text[:35], tag)\n            row[\"predicted_tag\"] = tag\n        annotated.append(row)\n\n    if not dry_run:\n        with open(output_csv, mode=\"w\", encoding=\"utf-8\", newline=\"\") as f:\n            writer = csv.DictWriter(f, fieldnames=fieldnames)\n            writer.writeheader()\n            writer.writerows(annotated)\n        logging.info(\"Saved tagged tickets to %s\", output_csv)\n    else:\n        logging.info(\"Dry-run complete. No output file written.\")\n\n\ndef main():\n    parser = argparse.ArgumentParser(description=\"Batch tag support tickets with local Ollama.\")\n    parser.add_argument(\"-i\", \"--input\", default=\"tickets.csv\", help=\"Path to input CSV (must contain ticket_text)\")\n    parser.add_argument(\"-o\", \"--output\", default=\"tagged_tickets.csv\", help=\"Path to output CSV\")\n    parser.add_argument(\"-e\", \"--endpoint\", default=\"http://localhost:11434\", help=\"Ollama base URL\")\n    parser.add_argument(\"-m\", \"--model\", default=\"llama3.2\", help=\"Ollama model tag to query\")\n    parser.add_argument(\"--dry-run\", action=\"store_true\", help=\"Preview batches without querying LLM\")\n    args = parser.parse_args()\n\n    process_tickets(\n        input_csv=args.input,\n        output_csv=args.output,\n        endpoint=args.endpoint,\n        model=args.model,\n        dry_run=args.dry_run,\n    )\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9+ is installed.\n2. Install required package:\n   pip install requests\n3. Install Ollama from https://ollama.com and pull a lightweight model:\n   ollama run llama3.2\n\nHOW IT WORKS\n`tool.py` reads a CSV file containing an inbox export with a 'ticket_text' column. For each row, it sends the ticket description to your local Ollama HTTP endpoint (default http://localhost:11434) and attaches the returned tag (e.g., Urgent, Billing, Technical) to a new column called 'predicted_tag'. All results are written safely to a new output CSV without modifying the original data.\n\nUsage:\n  python tool.py --dry-run\n  python tool.py -i customer_tickets.csv -o tagged_export.csv\n\nADAPTING IT\n- Custom Tags: Edit the prompt string inside `classify_ticket()` to specify your own domain tags (e.g., Returns, Partnerships, Spam).\n- Model Selection: Pass `--model mistral` or `--model phi3` to switch between installed local models based on your hardware.\n- Timeout: Adjust the timeout argument in `requests.post()` if you process lengthy paragraphs on slower CPUs.\n\nLIMITATIONS\n- Local inference speed depends strictly on your hardware. Systems with under 8GB RAM may experience slow generation.\n- Generative models can occasionally return slight phrasing variations instead of rigid enum values. Test output consistency with a small sample first.\n\nSUPPORT\nProvided as-is without warranty. Community support available via GitHub issues.",
+  "product_name": "Local Ticket Tagger Automation Kit",
+  "product_blurb": "Batch classify customer inquiries and support tickets locally on your own machine with zero subscription fees. Includes CLI arguments, dry-run testing, and structured CSV exporting.",
+  "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text"
+}
