@@ -1,0 +1,52 @@
+{
+  "slug": "extract-tracking-numbers-from-pdfs-python",
+  "title": "Extract Tracking Numbers from PDFs with Python",
+  "hook_text": "No paid software needed for PDF data.",
+  "description": "Stop paying monthly subscription fees just to pull order identifiers from vendor PDF slips. Here is a 10-line Python script that scans digital PDFs and extracts tracking codes directly.",
+  "tags": [
+    "python",
+    "pypdf",
+    "automation",
+    "smallbusiness",
+    "pdfextraction",
+    "regex"
+  ],
+  "code": "import glob, re\nfrom pypdf import PdfReader as PR\n\nout = []\nfor path in glob.glob(\"slips/*.pdf\"):\n    text = PR(path).pages[0].extract_text()\n    m = re.search(r\"TRK-\\d{8}\", text)\n    if m:\n        out.append((path, m.group()))\nprint(f\"Saved {len(out)} tracking numbers\")",
+  "beats": [
+    {
+      "voice": "You do not need paid software to pull out tracking numbers.",
+      "reveal": 2,
+      "badge": "MYTH BUSTED",
+      "output": ""
+    },
+    {
+      "voice": "Vendors charge monthly fees for PDF scrapers, but Python handles this with native libraries.",
+      "reveal": 5,
+      "badge": "FREE PDF PARSER",
+      "output": ""
+    },
+    {
+      "voice": "We read each slip with PyPDF and match the tracking code pattern using regex.",
+      "reveal": 9,
+      "badge": "REGEX MATCHING",
+      "output": ""
+    },
+    {
+      "voice": "Run it, and dozens of codes extract instantly to clean structured data.",
+      "reveal": 10,
+      "badge": "BATCH EXTRACTED",
+      "output": "Saved 42 tracking numbers"
+    },
+    {
+      "voice": "It only works on selectable text PDFs rather than flat photo scans, but whenever files are digital...",
+      "reveal": 10,
+      "badge": "DIGITAL TEXT ONLY",
+      "output": "Saved 42 tracking numbers"
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Batch extract identifier patterns from digital PDFs into CSV.\"\"\"\n\nimport argparse\nimport csv\nimport logging\nimport os\nimport re\nimport sys\nfrom pypdf import PdfReader\n\n\ndef setup_logging(verbose: bool) -> None:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(level=level, format=\"%(levelname)s: %(message)s\")\n\n\ndef extract_patterns(folder: str, pattern: str, max_pages: int) -> list[tuple[str, str]]:\n    regex = re.compile(pattern)\n    results = []\n    pdf_files = [f for f in os.listdir(folder) if f.lower().endswith(\".pdf\")]\n\n    if not pdf_files:\n        logging.warning(\"No PDF files found in '%s'.\", folder)\n        return results\n\n    for filename in sorted(pdf_files):\n        filepath = os.path.join(folder, filename)\n        try:\n            reader = PdfReader(filepath)\n            found = False\n            pages_to_check = min(len(reader.pages), max_pages)\n            for idx in range(pages_to_check):\n                text = reader.pages[idx].extract_text() or \"\"\n                match = regex.search(text)\n                if match:\n                    results.append((filename, match.group(0)))\n                    logging.debug(\"Matched %s in %s\", match.group(0), filename)\n                    found = True\n                    break\n            if not found:\n                logging.debug(\"No match found in %s\", filename)\n        except Exception as exc:\n            logging.error(\"Could not parse %s: %s\", filename, exc)\n\n    return results\n\n\ndef write_csv(results: list[tuple[str, str]], output_path: str) -> None:\n    with open(output_path, \"w\", newline=\"\", encoding=\"utf-8\") as f:\n        writer = csv.writer(f)\n        writer.writerow([\"Filename\", \"ExtractedValue\"])\n        writer.writerows(results)\n    logging.info(\"Wrote %d rows to %s\", len(results), output_path)\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(description=\"Extract patterns from PDF files into CSV.\")\n    parser.add_argument(\"--folder\", default=\"slips\", help=\"Path to folder containing PDFs\")\n    parser.add_argument(\"--pattern\", default=r\"TRK-\\d{8}\", help=\"Regular expression pattern to match\")\n    parser.add_argument(\"--output\", default=\"extracted_data.csv\", help=\"Output CSV filepath\")\n    parser.add_argument(\"--pages\", type=int, default=2, help=\"Max pages per PDF to inspect\")\n    parser.add_argument(\"--dry-run\", action=\"store_true\", help=\"Print matches without writing output CSV\")\n    parser.add_argument(\"-v\", \"--verbose\", action=\"store_true\", help=\"Enable debug logging\")\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n    setup_logging(args.verbose)\n\n    if not os.path.isdir(args.folder):\n        logging.error(\"Folder '%s' does not exist.\", args.folder)\n        sys.exit(1)\n\n    logging.info(\"Scanning '%s' with pattern '%s'...\", args.folder, args.pattern)\n    results = extract_patterns(args.folder, args.pattern, args.pages)\n\n    if args.dry_run:\n        logging.info(\"Dry run active. Found %d matches:\", len(results))\n        for name, value in results:\n            print(f\"  {name} -> {value}\")\n        return\n\n    write_csv(results, args.output)\n\n\nif __name__ == \"__main__\":\n    main()",
+  "kit_readme": "SETUP\n1. Ensure Python 3.10+ is installed.\n2. Install required library: pip install pypdf\n3. Place your digital PDF slips or invoices into a folder (e.g., 'slips/').\n\nHOW IT WORKS\ntool.py scans every PDF in the specified target folder, extracts text from the initial pages, applies your regular expression pattern, and writes all matches out to a structured CSV file.\nRun dry-run mode to test matches:\n  python tool.py --folder slips --pattern \"TRK-\\d{8}\" --dry-run\n\nExport matches to CSV:\n  python tool.py --folder slips --output tracking_export.csv\n\nADAPTING IT\nChange the --pattern argument to match your business document format:\n- Standard UPS Tracking: --pattern \"1Z[0-9A-Z]{16}\"\n- Purchase Order: --pattern \"PO-[0-9]{5,8}\"\n- Custom Vendor Invoices: adjust the regex and the --pages flag if text appears on subsequent pages.\n\nLIMITATIONS\nThis script extracts text from digital, vector-based PDFs containing embedded selectable text. It cannot extract text from raster image scans or camera photos without an additional OCR engine like Tesseract.\n\nSUPPORT\nProvided as-is with no warranty under MIT License. Test on non-critical backups before deploying into production pipelines.",
+  "product_name": "Digital PDF Batch Pattern Extractor",
+  "product_blurb": "Extract tracking codes, PO numbers, and references from batches of digital PDFs directly into clean CSV spreadsheets. Built with Python and pypdf to automate document data retrieval without recurring SaaS costs.",
+  "pillar": "Extract data from PDFs or text files you own with a short script"
+}

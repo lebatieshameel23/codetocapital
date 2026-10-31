@@ -29,7 +29,9 @@
     "2026-10-29T12:00:00+02:00": "1BJKAtvE1NM",
     "2026-10-29T18:00:00+02:00": "E2JGrGYHiZ8",
     "2026-10-31T12:00:00+02:00": "BPoDxDEJH5I",
-    "2026-10-31T18:00:00+02:00": "kzh8Sv2GdKo"
+    "2026-10-31T18:00:00+02:00": "kzh8Sv2GdKo",
+    "2026-11-01T12:00:00+02:00": "azAsJ69AGLM",
+    "2026-11-01T18:00:00+02:00": "4AXxRJ5DH_I"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -185,6 +187,20 @@
       "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)",
       "ep": 22,
       "publishAt": "2026-10-31T16:00:00.000Z"
+    },
+    "azAsJ69AGLM": {
+      "slug": "isolate-and-archive-newsletters-python",
+      "title": "Isolate and Archive Newsletter Emails with Python",
+      "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first",
+      "ep": 23,
+      "publishAt": "2026-11-01T10:00:00.000Z"
+    },
+    "4AXxRJ5DH_I": {
+      "slug": "tag-customer-tickets-python-ollama",
+      "title": "Tag Customer Tickets Fast with 8 Lines of Python",
+      "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text",
+      "ep": 24,
+      "publishAt": "2026-11-01T16:00:00.000Z"
     }
   },
   "replied": []

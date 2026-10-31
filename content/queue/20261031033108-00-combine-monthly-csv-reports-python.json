@@ -1,0 +1,52 @@
+{
+  "slug": "combine-monthly-csv-reports-python",
+  "title": "Combine Every Monthly CSV into One File with Python",
+  "hook_text": "Stop copy-pasting monthly sheets",
+  "description": "Combine dozens of monthly CSV exports into one clean master spreadsheet automatically using Python and pandas. This quick script grabs every matching file and stacks them into a single report in seconds.",
+  "tags": [
+    "python",
+    "pandas",
+    "excel automation",
+    "csv",
+    "office productivity",
+    "data cleaning"
+  ],
+  "code": "import glob\nimport pandas as pd\n\nfiles = glob.glob(\"monthly_*.csv\")\ndfs = [pd.read_csv(f) for f in files]\nout = pd.concat(dfs, ignore_index=True)\nout.to_csv(\"combined.csv\", index=False)\nprint(f\"Combined {len(files)} reports\")",
+  "beats": [
+    {
+      "voice": "There is a clean Python pattern that merges twelve monthly spreadsheets before you finish opening Excel.",
+      "reveal": 2,
+      "badge": "No manual merging",
+      "output": ""
+    },
+    {
+      "voice": "Use glob to grab every monthly file in your folder matching your naming rule.",
+      "reveal": 4,
+      "badge": "Find all files",
+      "output": ""
+    },
+    {
+      "voice": "Read them into a list of tables and stack them with concat.",
+      "reveal": 6,
+      "badge": "Stack rows",
+      "output": ""
+    },
+    {
+      "voice": "Export the master file in one shot. Headers stay aligned, rows line up, zero copy-pasting.",
+      "reveal": 8,
+      "badge": "Done in seconds",
+      "output": "Combined 12 reports"
+    },
+    {
+      "voice": "If your columns change between months, pandas pads missing headers with blanks instead of crashing. That is why...",
+      "reveal": 8,
+      "badge": "Handles missing cols",
+      "output": "wrote combined.csv"
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"tool.py - Batch combine matching CSV spreadsheets into a single master file.\n\nUsage:\n    python tool.py --pattern \"data/monthly_*.csv\" --output master.csv\n    python tool.py --pattern \"*.csv\" --output combined.csv --dry-run\n\"\"\"\n\nimport argparse\nimport glob\nimport logging\nimport os\nimport sys\nimport pandas as pd\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%H:%M:%S\",\n)\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Combine matching CSV files into one consolidated master file.\"\n    )\n    parser.add_argument(\n        \"-p\",\n        \"--pattern\",\n        default=\"*.csv\",\n        help=\"Glob pattern matching input CSV files (default: '*.csv')\",\n    )\n    parser.add_argument(\n        \"-o\",\n        \"--output\",\n        default=\"combined.csv\",\n        help=\"Destination filename for combined CSV (default: combined.csv)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"List matched files and report row counts without writing the output.\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n    matched = sorted(glob.glob(args.pattern))\n\n    # Exclude output file if it sits in the same directory\n    out_path = os.path.abspath(args.output)\n    matched = [f for f in matched if os.path.abspath(f) != out_path]\n\n    if not matched:\n        logging.error(\"No files found matching pattern: %s\", args.pattern)\n        sys.exit(1)\n\n    logging.info(\"Found %d files matching '%s'\", len(matched), args.pattern)\n\n    total_rows = 0\n    dfs = []\n    for filepath in matched:\n        try:\n            df = pd.read_csv(filepath)\n            dfs.append(df)\n            total_rows += len(df)\n            logging.info(\"  Read %s (%d rows)\", os.path.basename(filepath), len(df))\n        except Exception as exc:\n            logging.error(\"  Failed reading %s: %s\", filepath, exc)\n            sys.exit(1)\n\n    if args.dry_run:\n        logging.info(\n            \"[DRY RUN] Would combine %d files totaling %d rows into %s\",\n            len(dfs),\n            total_rows,\n            args.output,\n        )\n        return\n\n    combined = pd.concat(dfs, ignore_index=True)\n    out_dir = os.path.dirname(args.output)\n    if out_dir:\n        os.makedirs(out_dir, exist_ok=True)\n\n    combined.to_csv(args.output, index=False)\n    logging.info(\n        \"Wrote %d combined rows from %d files to %s\",\n        len(combined),\n        len(dfs),\n        args.output,\n    )\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8 or higher is installed.\n2. Install required dependencies:\n   pip install pandas\n3. Place tool.py in your working directory or scripts folder.\n\nHOW IT WORKS\nRun tool.py with a glob pattern matching your source CSV files:\n   python tool.py --pattern \"exports/month_*.csv\" --output master_sales.csv\n\nThe script loads each file using pandas, automatically excludes any\nexisting destination file from the matched list, concatenates all rows,\nand exports one consolidated CSV file.\n\nUse --dry-run to preview matched files and row totals without writing:\n   python tool.py --pattern \"*.csv\" --output combined.csv --dry-run\n\nADAPTING IT\n- To preserve source filenames on each row, insert:\n    df['source_file'] = os.path.basename(filepath)\n  inside the read loop before appending to dfs.\n- To export directly to Excel instead of CSV, install openpyxl and change\n  combined.to_csv(...) to combined.to_excel(args.output, index=False).\n\nLIMITATIONS\n- All CSV files are held in memory during concat; extremely large multi-gigabyte\n  datasets should be streamed using csv.reader chunks instead.\n- If matched files contain completely mismatched column headers, pandas will\n  outer-join all headers, resulting in sparse empty cells.\n\nSUPPORT\nCode is provided as-is without warranty. Feel free to adapt for internal workflows.\n",
+  "product_name": "CSV Consolidator CLI",
+  "product_blurb": "Merge dozens of fragmented monthly or regional CSV exports into one clean master table in seconds. Includes a ready-to-run CLI with dry-run verification, row counting, and missing-column protection.",
+  "pillar": "Automate a boring spreadsheet or CSV task with Python"
+}
