@@ -31,7 +31,9 @@
     "2026-10-31T12:00:00+02:00": "BPoDxDEJH5I",
     "2026-10-31T18:00:00+02:00": "kzh8Sv2GdKo",
     "2026-11-01T12:00:00+02:00": "azAsJ69AGLM",
-    "2026-11-01T18:00:00+02:00": "4AXxRJ5DH_I"
+    "2026-11-01T18:00:00+02:00": "4AXxRJ5DH_I",
+    "2026-11-02T12:00:00+02:00": "YmgSXQiWamg",
+    "2026-11-02T18:00:00+02:00": "RaybYEZTT0U"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -201,6 +203,20 @@
       "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text",
       "ep": 24,
       "publishAt": "2026-11-01T16:00:00.000Z"
+    },
+    "YmgSXQiWamg": {
+      "slug": "generate-styled-excel-expense-reports",
+      "title": "Generate Styled Excel Expense Reports with Python",
+      "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl",
+      "ep": 25,
+      "publishAt": "2026-11-02T10:00:00.000Z"
+    },
+    "RaybYEZTT0U": {
+      "slug": "combine-monthly-csv-reports-python",
+      "title": "Combine Every Monthly CSV into One File with Python",
+      "pillar": "Automate a boring spreadsheet or CSV task with Python",
+      "ep": 26,
+      "publishAt": "2026-11-02T16:00:00.000Z"
     }
   },
   "replied": []
