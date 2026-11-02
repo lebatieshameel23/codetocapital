@@ -1,17 +1,18 @@
 {
-  "updated": "2026-11-01T03:34:26.614632+00:00",
-  "videos_scored": 18,
+  "updated": "2026-11-02T03:38:22.045964+00:00",
+  "videos_scored": 20,
   "pillar_weights": {
-    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.41,
-    "Rename, sort or clean up hundreds of files in one command": 1.01,
-    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.99,
-    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.62,
-    "Build a formatted Excel report from raw data with pandas and openpyxl": 1.42,
+    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.45,
+    "Rename, sort or clean up hundreds of files in one command": 1.08,
+    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 1.06,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.66,
+    "Spot duplicates or errors in business data with a few lines of pandas": 0.37,
+    "Build a formatted Excel report from raw data with pandas and openpyxl": 1.57,
     "Use an AI/LLM API call to classify, summarise or tag messy text": 0.3,
-    "Spot duplicates or errors in business data with a few lines of pandas": 0.3,
-    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.81,
-    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.56,
-    "Extract data from PDFs or text files you own with a short script": 4.71
+    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.86,
+    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.59,
+    "Extract data from PDFs or text files you own with a short script": 5.02,
+    "Automate a boring spreadsheet or CSV task with Python": 0.3
   },
   "top": [
     "Extract Invoice Totals from PDFs with 10 Lines of Python",
@@ -21,8 +22,8 @@
     "Stop Using VLOOKUP: Reconcile Spreadsheets in Python"
   ],
   "bottom": [
-    "Find Duplicate Charges Fast with 8 Lines of Python",
     "Find Unpaid Invoices Across Two Sheets with Python",
+    "Split One Master CSV into Client Files with Python",
     "Sort Hundreds of Files into Folders with 8 Lines of Python"
   ]
 }
