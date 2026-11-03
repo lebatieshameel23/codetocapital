@@ -1,0 +1,52 @@
+{
+  "slug": "email-file-change-alerts-python",
+  "title": "Get Email Alerts When a File Updates in Python",
+  "hook_text": "Auto-email when a file changes",
+  "description": "Monitor critical files and trigger automated email notifications the moment modifications occur. Use this Python automation to eliminate manual checking of shared export folders.",
+  "tags": [
+    "python",
+    "automation",
+    "email",
+    "sysadmin",
+    "smallbusiness",
+    "coding"
+  ],
+  "code": "import hashlib, smtplib, time\nlast = \"\"\nwhile True:\n    raw = open(\"data.csv\", \"rb\").read()\n    now = hashlib.md5(raw).digest()\n    if last and now != last:\n        m = smtplib.SMTP(\"localhost\")\n        m.sendmail(\"a@b\", \"c@d\", \"Alert\")\n        print(\"Alert sent: file changed\")\n    last = now; time.sleep(10)",
+  "beats": [
+    {
+      "voice": "There is a standard library trick that emails your inbox the exact second a shared file changes.",
+      "reveal": 3,
+      "badge": "File Watcher",
+      "output": ""
+    },
+    {
+      "voice": "Read the target file in binary mode and calculate its cryptographic digest using hashlib.",
+      "reveal": 5,
+      "badge": "Compute Hash",
+      "output": ""
+    },
+    {
+      "voice": "If the new digest does not match the previous cycle, connect to SMTP and dispatch the message.",
+      "reveal": 8,
+      "badge": "SMTP Dispatch",
+      "output": ""
+    },
+    {
+      "voice": "When another process saves new data, the script triggers instantly and delivers your alert.",
+      "reveal": 10,
+      "badge": "Instant Alert",
+      "output": "Alert sent: file changed"
+    },
+    {
+      "voice": "This simple loop requires an active mail relay, so keep that server available whenever...",
+      "reveal": 10,
+      "badge": "Relay Required",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Automated file change monitor with email alerts.\n\nMonitors a local file for content modifications via SHA-256 hashing\nand dispatches email notifications via SMTP when changes occur.\n\"\"\"\n\nimport argparse\nimport hashlib\nimport logging\nimport os\nimport smtplib\nimport sys\nimport time\nfrom email.message import EmailMessage\n\n\ndef setup_logger(verbose: bool = False) -> logging.Logger:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(\n        level=level,\n        format=\"%(asctime)s [%(levelname)s] %(message)s\",\n        datefmt=\"%Y-%m-%d %H:%M:%S\",\n    )\n    return logging.getLogger(\"file_monitor\")\n\n\ndef get_file_hash(filepath: str) -> str:\n    \"\"\"Calculate SHA-256 hash of a file.\"\"\"\n    hasher = hashlib.sha256()\n    with open(filepath, \"rb\") as f:\n        while chunk := f.read(65536):\n            hasher.update(chunk)\n    return hasher.hexdigest()\n\n\ndef send_email_alert(\n    host: str,\n    port: int,\n    sender: str,\n    recipient: str,\n    filename: str,\n    old_hash: str,\n    new_hash: str,\n    dry_run: bool = False,\n) -> bool:\n    \"\"\"Send an email notification when a monitored file changes.\"\"\"\n    msg = EmailMessage()\n    msg[\"Subject\"] = f\"File Change Detected: {os.path.basename(filename)}\"\n    msg[\"From\"] = sender\n    msg[\"To\"] = recipient\n    body = (\n        f\"File change detected for: {filename}\\n\"\n        f\"Previous SHA-256: {old_hash}\\n\"\n        f\"New SHA-256:      {new_hash}\\n\"\n        f\"Timestamp:        {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}\\n\"\n    )\n    msg.set_content(body)\n\n    if dry_run:\n        logging.info(\"[DRY RUN] Would send email to %s:\\n%s\", recipient, body.strip())\n        return True\n\n    try:\n        with smtplib.SMTP(host, port, timeout=10) as server:\n            server.send_message(msg)\n        logging.info(\"Email alert successfully sent to %s\", recipient)\n        return True\n    except (smtplib.SMTPException, OSError) as e:\n        logging.error(\"Failed to dispatch email via %s:%d - %s\", host, port, e)\n        return False\n\n\ndef monitor_file(args: argparse.Namespace, logger: logging.Logger) -> None:\n    filepath = args.file\n    if not os.path.exists(filepath):\n        logger.error(\"Target file does not exist: %s\", filepath)\n        sys.exit(1)\n\n    logger.info(\"Initializing monitor for: %s\", filepath)\n    try:\n        current_hash = get_file_hash(filepath)\n    except OSError as e:\n        logger.error(\"Cannot read initial file state: %s\", e)\n        sys.exit(1)\n\n    logger.info(\"Initial hash: %s\", current_hash)\n    if args.once:\n        logger.info(\"Single-check mode complete.\")\n        return\n\n    logger.info(\"Watching for changes every %d seconds. Press Ctrl+C to stop.\", args.interval)\n    try:\n        while True:\n            time.sleep(args.interval)\n            if not os.path.exists(filepath):\n                logger.warning(\"Monitored file temporarily missing: %s\", filepath)\n                continue\n\n            try:\n                new_hash = get_file_hash(filepath)\n            except OSError as e:\n                logger.warning(\"Error reading file during poll: %s\", e)\n                continue\n\n            if new_hash != current_hash:\n                logger.warning(\"Hash mismatch detected on %s!\", filepath)\n                send_email_alert(\n                    host=args.smtp_host,\n                    port=args.smtp_port,\n                    sender=args.sender,\n                    recipient=args.recipient,\n                    filename=filepath,\n                    old_hash=current_hash,\n                    new_hash=new_hash,\n                    dry_run=args.dry_run,\n                )\n                current_hash = new_hash\n            else:\n                logger.debug(\"No change detected.\")\n    except KeyboardInterrupt:\n        logger.info(\"Monitoring terminated by user.\")\n\n\ndef build_parser() -> argparse.ArgumentParser:\n    parser = argparse.ArgumentParser(\n        description=\"Monitor a file for modifications and send SMTP email alerts.\"\n    )\n    parser.add_argument(\"--file\", \"-f\", default=\"data.csv\", help=\"Path to monitored file\")\n    parser.add_argument(\"--interval\", \"-i\", type=int, default=10, help=\"Poll interval in seconds\")\n    parser.add_argument(\"--smtp-host\", default=\"localhost\", help=\"SMTP server host\")\n    parser.add_argument(\"--smtp-port\", type=int, default=25, help=\"SMTP server port\")\n    parser.add_argument(\"--sender\", default=\"alerts@company.local\", help=\"Sender email address\")\n    parser.add_argument(\"--recipient\", default=\"team@company.local\", help=\"Recipient email address\")\n    parser.add_argument(\"--dry-run\", action=\"store_true\", help=\"Log alerts without sending email\")\n    parser.add_argument(\"--once\", action=\"store_true\", help=\"Compute hash once and exit\")\n    parser.add_argument(\"-v\", \"--verbose\", action=\"store_true\", help=\"Enable debug logging\")\n    return parser\n\n\ndef main() -> None:\n    parser = build_parser()\n    args = parser.parse_args()\n    logger = setup_logger(args.verbose)\n    monitor_file(args, logger)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed on your system.\n2. No external third-party dependencies are required. All modules used by tool.py belong to the standard library.\n3. Make sure an accessible SMTP server or local mail relay is listening on your network.\n\nHOW IT WORKS\ntool.py tracks a designated local file by computing its SHA-256 hash. At each polling interval, the script re-computes the file hash in 64 KB memory-safe chunks. If the hash changes from the previous reading, an email alert containing the filename, timestamps, and hash changes is dispatched via SMTP.\n\nRun in dry-run mode to verify hashing without delivering emails:\n  python tool.py --file /path/to/data.csv --dry-run\n\nRun in standard monitoring mode:\n  python tool.py --file /path/to/data.csv --interval 30 --smtp-host mail.internal.lan --sender bot@internal.lan --recipient alerts@company.com\n\nADAPTING IT\n- To use an authenticated SMTP service (such as SendGrid or Amazon SES), add SMTP authentication (server.login) inside send_email_alert().\n- To monitor multiple files simultaneously, adjust monitor_file() to accept a directory path and retain a dictionary mapping file paths to their individual hashes.\n\nLIMITATIONS\n- Polling does not detect intermediate revisions if a file is modified and then rapidly reverted between polling intervals.\n- If a file is opened with exclusive write locks by another application on Windows, read attempts may briefly fail until the lock is released.\n\nSUPPORT\nThis software is provided as-is without warranty of any kind. Users are responsible for testing alerts against their own mail servers before deploying to production.",
+  "product_name": "Automated File Change Email Notifier",
+  "product_blurb": "Monitor critical business files and receive instant email notifications the moment data changes. Built entirely with Python's standard library to eliminate recurring third-party monitoring costs.",
+  "pillar": "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes"
+}

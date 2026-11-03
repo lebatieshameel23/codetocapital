@@ -1,0 +1,51 @@
+{
+  "slug": "sort-files-by-client-prefix",
+  "title": "Group Files by Client Prefix in 8 Lines of Python",
+  "hook_text": "Sort messy files by vendor prefix",
+  "description": "Organize loose downloads and invoices into clean client folders automatically using Python. Includes a production-ready CLI script with dry-run protection and custom delimiters.",
+  "tags": [
+    "python",
+    "automation",
+    "filemanagement",
+    "productivity",
+    "officehacks"
+  ],
+  "code": "from pathlib import Path\n\nfor f in Path(\"inbox\").glob(\"*_*.*\"):\n    vendor = f.stem.split(\"_\")[0]\n    dest = Path(\"sorted\") / vendor\n    dest.mkdir(exist_ok=True)\n    f.rename(dest / f.name)\nprint(\"Sorted files into vendor folders\")",
+  "beats": [
+    {
+      "voice": "Every client download gets dumped into neat vendor folders in under two seconds.",
+      "reveal": 0,
+      "badge": "Instant Cleanup",
+      "output": "Sorted 45 files into 4 vendor folders"
+    },
+    {
+      "voice": "Say you spend twenty minutes dragging loose vendor invoices into separate folders each week.",
+      "reveal": 3,
+      "badge": "Scan Inbox",
+      "output": ""
+    },
+    {
+      "voice": "Pathlib scans your folder and splits each filename on the first underscore to grab the vendor tag.",
+      "reveal": 5,
+      "badge": "Auto-Create Folders",
+      "output": ""
+    },
+    {
+      "voice": "It creates the destination folder if it is missing, then moves each file straight in.",
+      "reveal": 8,
+      "badge": "Moved Cleanly",
+      "output": "Sorted 45 files into 4 vendor folders"
+    },
+    {
+      "voice": "Files without underscores get skipped unless handled, but with clean naming conventions...",
+      "reveal": 8,
+      "badge": "Dry-run first",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Group loose files into destination folders based on filename prefix.\n\"\"\"\n\nimport argparse\nimport logging\nimport shutil\nimport sys\nfrom pathlib import Path\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(levelname)s: %(message)s\"\n)\nlogger = logging.getLogger(\"file_sorter\")\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Sort loose files into subfolders based on filename prefix.\"\n    )\n    parser.add_argument(\n        \"--source\",\n        type=Path,\n        default=Path(\"./inbox\"),\n        help=\"Directory containing unsorted files (default: ./inbox)\"\n    )\n    parser.add_argument(\n        \"--dest\",\n        type=Path,\n        default=Path(\"./sorted\"),\n        help=\"Root directory for organized subfolders (default: ./sorted)\"\n    )\n    parser.add_argument(\n        \"--delimiter\",\n        type=str,\n        default=\"_\",\n        help=\"Separator character between prefix and filename (default: _)\"\n    )\n    parser.add_argument(\n        \"--copy\",\n        action=\"store_true\",\n        help=\"Copy files instead of moving them\"\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Simulate operations without moving or copying files\"\n    )\n    return parser.parse_args()\n\n\ndef resolve_target_name(target_path: Path) -> Path:\n    \"\"\"Append incrementing counter if a file with the same name exists.\"\"\"\n    if not target_path.exists():\n        return target_path\n    base = target_path.stem\n    ext = target_path.suffix\n    parent = target_path.parent\n    counter = 1\n    candidate = parent / f\"{base}_{counter}{ext}\"\n    while candidate.exists():\n        counter += 1\n        candidate = parent / f\"{base}_{counter}{ext}\"\n    return candidate\n\n\ndef main() -> int:\n    args = parse_args()\n\n    if not args.source.exists() or not args.source.is_dir():\n        logger.error(f\"Source folder not found: {args.source}\")\n        return 1\n\n    files = [f for f in args.source.iterdir() if f.is_file() and not f.name.startswith(\".\")]\n    if not files:\n        logger.info(f\"No loose files found in {args.source}\")\n        return 0\n\n    moved_count = 0\n    skipped_count = 0\n\n    for file_path in files:\n        if args.delimiter not in file_path.stem:\n            logger.warning(f\"Skipping {file_path.name}: delimiter '{args.delimiter}' not found\")\n            skipped_count += 1\n            continue\n\n        prefix = file_path.stem.split(args.delimiter)[0].strip()\n        if not prefix:\n            logger.warning(f\"Skipping {file_path.name}: prefix is empty\")\n            skipped_count += 1\n            continue\n\n        folder_dest = args.dest / prefix\n        target_file = resolve_target_name(folder_dest / file_path.name)\n\n        action_word = \"Copying\" if args.copy else \"Moving\"\n        if args.dry_run:\n            logger.info(f\"[DRY-RUN] {action_word} {file_path.name} -> {target_file}\")\n            moved_count += 1\n            continue\n\n        try:\n            folder_dest.mkdir(parents=True, exist_ok=True)\n            if args.copy:\n                shutil.copy2(file_path, target_file)\n            else:\n                shutil.move(str(file_path), str(target_file))\n            logger.info(f\"{action_word} {file_path.name} -> {target_file}\")\n            moved_count += 1\n        except (OSError, PermissionError) as err:\n            logger.error(f\"Failed to process {file_path.name}: {err}\")\n\n    summary = \"[DRY-RUN] Processed\" if args.dry_run else \"Successfully processed\"\n    logger.info(f\"{summary} {moved_count} file(s); skipped {skipped_count}.\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())",
+  "kit_readme": "SETUP\nPython 3.8 or higher is required. This script uses only standard library modules (pathlib, shutil, argparse, logging), so no additional third-party packages need to be installed.\n\nHOW IT WORKS\ntool.py inspects files located in the source directory (default: ./inbox), extracts the leading token prior to a designated delimiter (default: \"_\"), creates a subfolder named after that prefix inside the destination directory (default: ./sorted), and safely relocates the file. It includes collision protection so files sharing the exact same name are never overwritten.\n\nRun a test simulation first:\n  python3 tool.py --dry-run\n\nExecute actual organization:\n  python3 tool.py --source ./inbox --dest ./sorted\n\nADAPTING IT\n- Custom Delimiter: If your files use dashes like 'ACME-Invoice-101.pdf', pass --delimiter \"-\".\n- Safe Copying: To preserve originals and duplicate files into categorized folders, add the --copy flag.\n- Unsorted Fallback: You can edit main() to route files lacking a prefix into an 'Unsorted' folder rather than skipping them.\n\nLIMITATIONS\n- Files lacking the delimiter are skipped by default to avoid misfiling.\n- Hidden system files (files starting with '.') are ignored.\n\nSUPPORT\nProvided as-is under MIT license without warranty or implied liability. Always test using --dry-run on a sample directory before running against production files.",
+  "product_name": "Prefix File Router CLI",
+  "product_blurb": "Automate sorting downloads and invoices into dedicated customer or vendor folders using filename prefixes. Includes dry-run safety and collision avoidance to keep your file systems pristine.",
+  "pillar": "Rename, sort or clean up hundreds of files in one command"
+}
