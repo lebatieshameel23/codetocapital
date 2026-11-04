@@ -33,7 +33,9 @@
     "2026-11-01T12:00:00+02:00": "azAsJ69AGLM",
     "2026-11-01T18:00:00+02:00": "4AXxRJ5DH_I",
     "2026-11-02T12:00:00+02:00": "YmgSXQiWamg",
-    "2026-11-02T18:00:00+02:00": "RaybYEZTT0U"
+    "2026-11-02T18:00:00+02:00": "RaybYEZTT0U",
+    "2026-11-05T12:00:00+02:00": "RkDTJOgNGEI",
+    "2026-11-05T18:00:00+02:00": "Gq3FkiA_ioE"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -217,6 +219,20 @@
       "pillar": "Automate a boring spreadsheet or CSV task with Python",
       "ep": 26,
       "publishAt": "2026-11-02T16:00:00.000Z"
+    },
+    "RkDTJOgNGEI": {
+      "slug": "weather-forecast-api-to-csv",
+      "title": "Fetch 7-Day Weather Forecasts to CSV with Python",
+      "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet",
+      "ep": 27,
+      "publishAt": "2026-11-05T10:00:00.000Z"
+    },
+    "Gq3FkiA_ioE": {
+      "slug": "extract-tracking-numbers-from-pdfs-python",
+      "title": "Extract Tracking Numbers from PDFs with Python",
+      "pillar": "Extract data from PDFs or text files you own with a short script",
+      "ep": 28,
+      "publishAt": "2026-11-05T16:00:00.000Z"
     }
   },
   "replied": []
