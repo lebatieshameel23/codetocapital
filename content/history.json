@@ -35,7 +35,9 @@
     "2026-11-02T12:00:00+02:00": "YmgSXQiWamg",
     "2026-11-02T18:00:00+02:00": "RaybYEZTT0U",
     "2026-11-05T12:00:00+02:00": "RkDTJOgNGEI",
-    "2026-11-05T18:00:00+02:00": "Gq3FkiA_ioE"
+    "2026-11-05T18:00:00+02:00": "Gq3FkiA_ioE",
+    "2026-11-06T12:00:00+02:00": "25vk28Cltzw",
+    "2026-11-06T18:00:00+02:00": "UdnJuI8TT70"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -233,6 +235,20 @@
       "pillar": "Extract data from PDFs or text files you own with a short script",
       "ep": 28,
       "publishAt": "2026-11-05T16:00:00.000Z"
+    },
+    "25vk28Cltzw": {
+      "slug": "safely-triage-newsletter-subscriptions-python",
+      "title": "Safely Triage Newsletter Subscriptions with Python",
+      "pillar": "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first",
+      "ep": 29,
+      "publishAt": "2026-11-06T10:00:00.000Z"
+    },
+    "UdnJuI8TT70": {
+      "slug": "email-file-change-alerts-python",
+      "title": "Get Email Alerts When a File Updates in Python",
+      "pillar": "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes",
+      "ep": 30,
+      "publishAt": "2026-11-06T16:00:00.000Z"
     }
   },
   "replied": []
