@@ -38,7 +38,8 @@
     "2026-11-05T18:00:00+02:00": "Gq3FkiA_ioE",
     "2026-11-06T12:00:00+02:00": "25vk28Cltzw",
     "2026-11-06T18:00:00+02:00": "UdnJuI8TT70",
-    "2026-11-07T12:00:00+02:00": "k1_RnyPBDsE"
+    "2026-11-07T12:00:00+02:00": "k1_RnyPBDsE",
+    "2026-11-08T12:00:00+02:00": "-Ikbl7dBICs"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -257,6 +258,13 @@
       "pillar": "Rename, sort or clean up hundreds of files in one command",
       "ep": 31,
       "publishAt": "2026-11-07T10:00:00.000Z"
+    },
+    "-Ikbl7dBICs": {
+      "slug": "weekly-excel-billing-summary",
+      "title": "Build Weekly Excel Reports with 10 Lines of Python",
+      "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl",
+      "ep": 32,
+      "publishAt": "2026-11-08T10:00:00.000Z"
     }
   },
   "replied": []

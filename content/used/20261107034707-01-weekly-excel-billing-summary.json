@@ -1,0 +1,52 @@
+{
+  "slug": "weekly-excel-billing-summary",
+  "title": "Build Weekly Excel Reports with 10 Lines of Python",
+  "hook_text": "Stop doing this by hand in Excel.",
+  "description": "Convert raw billing exports into formatted Excel workbooks with bold headers and live sum formulas in seconds. This ten-line automation eliminates repetitive spreadsheet formatting for small teams.",
+  "tags": [
+    "python",
+    "excel automation",
+    "openpyxl",
+    "spreadsheet",
+    "office automation",
+    "python tutorial"
+  ],
+  "code": "import csv, openpyxl as ox\nfrom openpyxl.styles import Font\nwb = ox.Workbook()\nws = wb.active\nfor r in csv.reader(open(\"billing.csv\")):\n    ws.append(r)\nfor c in ws[1]: c.font = Font(bold=True)\nws.append([\"Total\", \"=SUM(B2:B99)\"])\nwb.save(\"billing_summary.xlsx\")\nprint(\"wrote billing_summary.xlsx\")",
+  "beats": [
+    {
+      "voice": "Most people rebuild this summary by hand in Excel every week. Here is the ten-line version.",
+      "reveal": 2,
+      "badge": "AUTOMATE EXCEL",
+      "output": ""
+    },
+    {
+      "voice": "We spin up a fresh workbook and stream in our raw weekly billing export row by row.",
+      "reveal": 6,
+      "badge": "STREAM CSV",
+      "output": ""
+    },
+    {
+      "voice": "Next, we grab the header row and bold every column title in one quick line.",
+      "reveal": 7,
+      "badge": "BOLD HEADERS",
+      "output": ""
+    },
+    {
+      "voice": "We append a live SUM formula, write the finished spreadsheet to disk, and confirm it.",
+      "reveal": 10,
+      "badge": "LIVE FORMULA",
+      "output": "wrote billing_summary.xlsx"
+    },
+    {
+      "voice": "One catch: hardcoded row limits need updating as your data scales, but running this takes two seconds, because...",
+      "reveal": 10,
+      "badge": "READY TO SHARE",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"\ntool.py - Build formatted Excel summaries from raw CSV data.\nPart of the CodeToCapital automation toolkit.\n\"\"\"\n\nimport argparse\nimport csv\nimport logging\nimport os\nimport sys\n\ntry:\n    import openpyxl\n    from openpyxl.styles import Alignment, Font, PatternFill\n    from openpyxl.utils import get_column_letter\nexcept ImportError:\n    sys.exit(\"Error: openpyxl is required. Run: pip install openpyxl\")\n\n\ndef setup_logging(verbose: bool) -> None:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(\n        level=level,\n        format=\"%(asctime)s [%(levelname)s] %(message)s\",\n        datefmt=\"%H:%M:%S\",\n    )\n\n\ndef build_report(\n    input_csv: str,\n    output_xlsx: str,\n    sheet_name: str,\n    sum_col_idx: int,\n    dry_run: bool,\n) -> None:\n    if not os.path.exists(input_csv):\n        raise FileNotFoundError(f\"Input file not found: {input_csv}\")\n\n    logging.info(\"Reading raw records from %s\", input_csv)\n    with open(input_csv, mode=\"r\", newline=\"\", encoding=\"utf-8\") as f:\n        reader = list(csv.reader(f))\n\n    if not reader:\n        logging.warning(\"Input CSV is empty; exiting without writing.\")\n        return\n\n    header, rows = reader[0], reader[1:]\n    logging.info(\"Loaded %d data rows across %d columns\", len(rows), len(header))\n\n    wb = openpyxl.Workbook()\n    ws = wb.active\n    ws.title = sheet_name\n\n    # Header styling\n    header_font = Font(name=\"Calibri\", size=11, bold=True, color=\"FFFFFF\")\n    header_fill = PatternFill(start_color=\"1F4E79\", end_color=\"1F4E79\", fill_type=\"solid\")\n\n    ws.append(header)\n    for cell in ws[1]:\n        cell.font = header_font\n        cell.fill = header_fill\n        cell.alignment = Alignment(horizontal=\"left\", vertical=\"center\")\n\n    # Append rows, casting numeric values where possible\n    for row in rows:\n        parsed_row = []\n        for val in row:\n            try:\n                parsed_row.append(float(val) if \".\" in val else int(val))\n            except ValueError:\n                parsed_row.append(val)\n        ws.append(parsed_row)\n\n    last_data_row = ws.max_row\n\n    # Add total row if valid sum column specified\n    if 1 <= sum_col_idx <= len(header):\n        col_letter = get_column_letter(sum_col_idx)\n        total_row = [\"\" for _ in range(len(header))]\n        total_row[0] = \"Total\"\n        total_row[sum_col_idx - 1] = f\"=SUM({col_letter}2:{col_letter}{last_data_row})\"\n        ws.append(total_row)\n\n        total_font = Font(name=\"Calibri\", size=11, bold=True)\n        for cell in ws[ws.max_row]:\n            cell.font = total_font\n\n    # Auto-fit column widths\n    for col in ws.columns:\n        col_letter = get_column_letter(col[0].column)\n        max_len = max(len(str(cell.value or \"\")) for cell in col)\n        ws.column_dimensions[col_letter].width = max(max_len + 3, 12)\n\n    if dry_run:\n        logging.info(\"[DRY RUN] Would write formatted workbook to: %s\", output_xlsx)\n        return\n\n    wb.save(output_xlsx)\n    logging.info(\"Successfully generated report: %s\", output_xlsx)\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Convert raw CSV exports into styled, auto-calculated Excel reports.\"\n    )\n    parser.add_argument(\"-i\", \"--input\", default=\"billing.csv\", help=\"Source CSV file\")\n    parser.add_argument(\"-o\", \"--output\", default=\"billing_summary.xlsx\", help=\"Output Excel path\")\n    parser.add_argument(\"-s\", \"--sheet-name\", default=\"Summary\", help=\"Excel worksheet title\")\n    parser.add_argument(\n        \"-c\", \"--sum-col\", type=int, default=2, help=\"1-indexed column number to calculate SUM on\"\n    )\n    parser.add_argument(\"--dry-run\", action=\"store_true\", help=\"Inspect input without writing output\")\n    parser.add_argument(\"-v\", \"--verbose\", action=\"store_true\", help=\"Enable debug logging\")\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n    setup_logging(args.verbose)\n    try:\n        build_report(\n            input_csv=args.input,\n            output_xlsx=args.output,\n            sheet_name=args.sheet_name,\n            sum_col_idx=args.sum_col,\n            dry_run=args.dry_run,\n        )\n    except Exception as exc:\n        logging.error(\"Operation failed: %s\", exc)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\nInstall openpyxl using pip:\n    pip install openpyxl\nEnsure Python 3.8+ is installed on your machine.\n\nHOW IT WORKS\nRun tool.py from your terminal:\n    python tool.py --input billing.csv --output billing_summary.xlsx\nThe script reads the input CSV, parses text and numeric cells, styles the header row with an accent background and bold text, adds an automatic SUM formula spanning exactly the populated rows, and auto-adjusts column widths to prevent clipped values.\nUse --dry-run to preview row parsing without touching disk:\n    python tool.py --input billing.csv --dry-run\n\nADAPTING IT\n- Change the total calculation column using --sum-col (e.g., `--sum-col 3` for column C).\n- Customize corporate header colors by modifying `header_fill` in `build_report()`.\n- Integrate tool.py into automated cron jobs or weekly bash schedules.\n\nLIMITATIONS\nCalculates one summary column formula per execution. Multi-sheet exports and pre-existing file overwrites require explicit output directory permissions.\n\nSUPPORT\nCode provided as-is without warranty. Community support available via CodeToCapital.",
+  "product_name": "Weekly Excel Report Automation Kit",
+  "product_blurb": "Turn messy, unformatted CSV billing and timesheet exports into styled, executive-ready Excel reports with one command. Features custom header styling, auto-fitted column widths, dynamic SUM formulas, and dry-run safety.",
+  "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl"
+}
