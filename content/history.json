@@ -39,7 +39,9 @@
     "2026-11-06T12:00:00+02:00": "25vk28Cltzw",
     "2026-11-06T18:00:00+02:00": "UdnJuI8TT70",
     "2026-11-07T12:00:00+02:00": "k1_RnyPBDsE",
-    "2026-11-08T12:00:00+02:00": "-Ikbl7dBICs"
+    "2026-11-08T12:00:00+02:00": "-Ikbl7dBICs",
+    "2026-11-09T12:00:00+02:00": "_lawcSgbH-o",
+    "2026-11-09T18:00:00+02:00": "CAe4BwW2QwI"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -265,6 +267,20 @@
       "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl",
       "ep": 32,
       "publishAt": "2026-11-08T10:00:00.000Z"
+    },
+    "_lawcSgbH-o": {
+      "slug": "find-missing-invoice-numbers-python",
+      "title": "Find Missing Invoice Numbers with 9 Lines of Python",
+      "pillar": "Spot duplicates or errors in business data with a few lines of pandas",
+      "ep": 33,
+      "publishAt": "2026-11-09T10:00:00.000Z"
+    },
+    "CAe4BwW2QwI": {
+      "slug": "deduplicate-leads-csv-python",
+      "title": "Deduplicate Messy CSV Leads Fast with Python",
+      "pillar": "Automate a boring spreadsheet or CSV task with Python",
+      "ep": 34,
+      "publishAt": "2026-11-09T16:00:00.000Z"
     }
   },
   "replied": []

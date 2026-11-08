@@ -1,0 +1,52 @@
+{
+  "slug": "deduplicate-leads-csv-python",
+  "title": "Deduplicate Messy CSV Leads Fast with Python",
+  "hook_text": "Stop removing duplicates by hand.",
+  "description": "Clean messy contact spreadsheets and keep the latest entry using a short Python script. Download the complete CLI deduplication tool with logging and dry-run support.",
+  "tags": [
+    "python",
+    "pandas",
+    "excel",
+    "csv",
+    "automation",
+    "smallbusiness"
+  ],
+  "code": "import pandas as pd\n\ndf = pd.read_csv(\"leads.csv\")\ndf[\"date\"] = pd.to_datetime(df[\"date\"])\ndf.sort_values(\"date\", inplace=True)\ndf.drop_duplicates(\"email\", keep=\"last\",\n                   inplace=True)\ndf.to_csv(\"clean.csv\", index=False)\nprint(f\"{len(df)} unique leads saved\")",
+  "beats": [
+    {
+      "voice": "Most people do this by hand in Excel every week. Here's the eight-line version.",
+      "reveal": 1,
+      "badge": "Automate Excel",
+      "output": ""
+    },
+    {
+      "voice": "We load your lead export into pandas and parse the timestamp column.",
+      "reveal": 4,
+      "badge": "Parse Dates",
+      "output": ""
+    },
+    {
+      "voice": "Sort by date, then drop duplicate emails while keeping only the freshest interaction.",
+      "reveal": 7,
+      "badge": "Keep Newest",
+      "output": ""
+    },
+    {
+      "voice": "Export the scrubbed list to a fresh file, untouched and ready for sales.",
+      "reveal": 9,
+      "badge": "Clean Export",
+      "output": "412 unique leads saved"
+    },
+    {
+      "voice": "It assumes valid date formats, but it saves twenty minutes every Monday morning...",
+      "reveal": 9,
+      "badge": "Date Format Limit",
+      "output": "412 unique leads saved"
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"tool.py - Deduplicate CSV records while preserving the newest entry.\"\"\"\n\nimport argparse\nimport logging\nimport sys\nfrom pathlib import Path\nimport pandas as pd\n\n\ndef setup_logging(verbose: bool = False) -> None:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(level=level, format=\"%(levelname)s: %(message)s\")\n\n\ndef deduplicate_csv(\n    input_path: Path,\n    output_path: Path,\n    key_col: str,\n    date_col: str,\n    dry_run: bool = False,\n) -> int:\n    if not input_path.exists():\n        raise FileNotFoundError(f\"Input file not found: {input_path}\")\n\n    logging.info(\"Reading source file: %s\", input_path)\n    df = pd.read_csv(input_path)\n\n    for col in (key_col, date_col):\n        if col not in df.columns:\n            raise KeyError(f\"Column '{col}' missing from {input_path.name}\")\n\n    total_records = len(df)\n    logging.info(\"Loaded %d total records\", total_records)\n\n    # Parse date column safely\n    df[date_col] = pd.to_datetime(df[date_col], errors=\"coerce\")\n    invalid_dates = df[date_col].isna().sum()\n    if invalid_dates > 0:\n        logging.warning(\n            \"%d records have unparseable dates and will sort to the start\",\n            invalid_dates,\n        )\n\n    # Sort ascending so 'last' keeps the most recent date\n    df.sort_values(by=date_col, inplace=True, na_position=\"first\")\n    df.drop_duplicates(subset=[key_col], keep=\"last\", inplace=True)\n\n    unique_records = len(df)\n    dropped_records = total_records - unique_records\n\n    logging.info(\n        \"Identified %d duplicates; %d unique records remaining\",\n        dropped_records,\n        unique_records,\n    )\n\n    if dry_run:\n        logging.info(\"[DRY RUN] Would write %d rows to %s\", unique_records, output_path)\n        return unique_records\n\n    output_path.parent.mkdir(parents=True, exist_ok=True)\n    df.to_csv(output_path, index=False)\n    logging.info(\"Wrote clean records to %s\", output_path)\n    return unique_records\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"Deduplicate CSV rows by a primary key, keeping latest timestamp.\"\n    )\n    parser.add_argument(\"-i\", \"--input\", required=True, type=Path, help=\"Input CSV path\")\n    parser.add_argument(\n        \"-o\",\n        \"--output\",\n        type=Path,\n        default=Path(\"clean_records.csv\"),\n        help=\"Output CSV destination (default: clean_records.csv)\",\n    )\n    parser.add_argument(\n        \"-k\",\n        \"--key\",\n        default=\"email\",\n        help=\"Deduplication column name (default: email)\",\n    )\n    parser.add_argument(\n        \"-d\",\n        \"--date\",\n        default=\"date\",\n        help=\"Timestamp column name to sort by (default: date)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Simulate duplicate removal without saving output file\",\n    )\n    parser.add_argument(\n        \"-v\", \"--verbose\", action=\"store_true\", help=\"Enable verbose output\"\n    )\n\n    args = parser.parse_args()\n    setup_logging(args.verbose)\n\n    try:\n        deduplicate_csv(\n            input_path=args.input,\n            output_path=args.output,\n            key_col=args.key,\n            date_col=args.date,\n            dry_run=args.dry_run,\n        )\n    except Exception as exc:\n        logging.error(\"Processing failed: %s\", exc)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8 or later is installed.\n2. Install required dependencies:\n   pip install pandas\n3. Place tool.py in your working folder or add it to your PATH.\n\nHOW IT WORKS\nRun tool.py from your terminal against any exported CSV file:\n  python tool.py -i leads.csv -o clean.csv -k email -d date\n\nThe tool loads your file into a pandas DataFrame, coerces the date column into\nstandardized timestamps, sorts rows chronologically, and drops duplicates on the\nchosen primary key while retaining the latest record. Use --dry-run to audit duplicate\ncounts without writing any files to disk.\n\nADAPTING IT\n- Custom Key Fields: Pass -k \"phone_number\" or -k \"customer_id\" to deduplicate on non-email columns.\n- Alternative Date Header: Change -d \"created_at\" or -d \"signup_time\" to match your CRM export headers.\n- Reverse Priority: If you need to keep the earliest record instead of the newest, edit tool.py and change keep=\"last\" to keep=\"first\".\n\nLIMITATIONS\n- Large files exceeding available RAM cannot be processed directly with pandas.\n- Ambiguous date formats (such as 03/04/2024 interpreted as March 4 vs April 3) should be formatted uniformly in ISO standard before processing.\n\nSUPPORT\nProvided as-is without warranty. Open an issue on your company repository if bugs are detected.",
+  "product_name": "CSV Smart Deduplicator Kit",
+  "product_blurb": "Clean messy lead spreadsheets and remove duplicate customer records while preserving the newest updates automatically. Includes command-line controls, safe dry-run audits, and robust logging.",
+  "pillar": "Automate a boring spreadsheet or CSV task with Python"
+}

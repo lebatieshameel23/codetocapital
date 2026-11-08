@@ -1,0 +1,52 @@
+{
+  "slug": "extract-pdf-due-dates-python",
+  "title": "Extract Due Dates from PDF Invoices with Python",
+  "hook_text": "Extract PDF Due Dates to CSV Fast",
+  "description": "Extract payment deadlines from a folder of digital PDF invoices directly into a clean CSV spreadsheet with Python. Save time on accounts payable and prevent missed due dates without third-party subscriptions.",
+  "tags": [
+    "python",
+    "pypdf",
+    "accounts payable",
+    "automation",
+    "invoices",
+    "small business"
+  ],
+  "code": "from pathlib import Path\nimport re, csv\nfrom pypdf import PdfReader\nout = []\nfor p in Path('.').glob('*.pdf'):\n    t = PdfReader(p).pages[0].extract_text()\n    m = re.search(r'Due:\\s*(\\S+)', t)\n    if m: out.append([p.name, m.group(1)])\nwith open('due.csv', 'w', newline='') as f:\n    csv.writer(f).writerows(out)",
+  "beats": [
+    {
+      "voice": "That clean spreadsheet just pulled the payment deadline out of every vendor PDF.",
+      "reveal": 0,
+      "badge": "Vendor Deadlines",
+      "output": "saved 18 due dates to due.csv"
+    },
+    {
+      "voice": "Say you handle forty bills a month. Skimming each one wastes time and risks missing cutoffs.",
+      "reveal": 3,
+      "badge": "Stop Skimming",
+      "output": ""
+    },
+    {
+      "voice": "With pypdf, Python opens every file in your folder and pulls the text in milliseconds.",
+      "reveal": 6,
+      "badge": "Read PDF Text",
+      "output": ""
+    },
+    {
+      "voice": "A quick regex matches the due date, writing every file and date to CSV.",
+      "reveal": 10,
+      "badge": "Export CSV",
+      "output": "saved 18 due dates to due.csv"
+    },
+    {
+      "voice": "Scanned paper receipts require OCR first, but for digital bills, you never miss a cutoff...",
+      "reveal": 10,
+      "badge": "Text PDFs Only",
+      "output": "saved 18 due dates to due.csv"
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Batch extract invoice due dates from digital PDF files into CSV.\n\"\"\"\n\nimport argparse\nimport csv\nimport logging\nimport re\nimport sys\nfrom pathlib import Path\n\ntry:\n    from pypdf import PdfReader\nexcept ImportError:\n    sys.exit(\"Error: pypdf is required. Install it via 'pip install pypdf'.\")\n\n# Common patterns for due dates in invoices\nDEFAULT_PATTERNS = [\n    r\"Due\\s*Date\\s*[:\\-]?\\s*([A-Za-z0-9/\\-\\.,]+)\",\n    r\"Payment\\s*Due\\s*[:\\-]?\\s*([A-Za-z0-9/\\-\\.,]+)\",\n    r\"Pay\\s*By\\s*[:\\-]?\\s*([A-Za-z0-9/\\-\\.,]+)\",\n    r\"Due\\s*[:\\-]?\\s*([A-Za-z0-9/\\-\\.,]+)\",\n]\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Extract due dates from PDF invoices in a directory.\"\n    )\n    parser.add_argument(\n        \"--dir\",\n        type=Path,\n        default=Path(\".\"),\n        help=\"Directory containing PDF files (default: current directory)\",\n    )\n    parser.add_argument(\n        \"--output\",\n        type=Path,\n        default=Path(\"due_dates.csv\"),\n        help=\"Output CSV filepath (default: due_dates.csv)\",\n    )\n    parser.add_argument(\n        \"--max-pages\",\n        type=int,\n        default=2,\n        help=\"Maximum pages to scan per PDF (default: 2)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Print matches without writing CSV output\",\n    )\n    parser.add_argument(\n        \"--verbose\",\n        action=\"store_true\",\n        help=\"Enable verbose diagnostic logging\",\n    )\n    return parser.parse_args()\n\n\ndef extract_text_from_pdf(pdf_path: Path, max_pages: int) -> str:\n    try:\n        reader = PdfReader(str(pdf_path))\n        text_chunks = []\n        pages_to_read = min(len(reader.pages), max_pages)\n        for i in range(pages_to_read):\n            extracted = reader.pages[i].extract_text() or \"\"\n            text_chunks.append(extracted)\n        return \"\\n\".join(text_chunks)\n    except Exception as exc:\n        logging.warning(\"Could not read %s: %s\", pdf_path.name, exc)\n        return \"\"\n\n\ndef find_due_date(text: str) -> str:\n    for pattern in DEFAULT_PATTERNS:\n        match = re.search(pattern, text, re.IGNORECASE)\n        if match:\n            candidate = match.group(1).strip().rstrip(\".\")\n            if len(candidate) >= 4:\n                return candidate\n    return \"NOT_FOUND\"\n\n\ndef main() -> None:\n    args = parse_args()\n    logging.basicConfig(\n        level=logging.DEBUG if args.verbose else logging.INFO,\n        format=\"%(levelname)s: %(message)\",\n    )\n\n    if not args.dir.is_dir():\n        sys.exit(f\"Error: Directory does not exist: {args.dir}\")\n\n    pdf_files = sorted(args.dir.glob(\"*.pdf\"))\n    if not pdf_files:\n        logging.warning(\"No PDF files found in %s\", args.dir)\n        return\n\n    records = []\n    for pdf_path in pdf_files:\n        text = extract_text_from_pdf(pdf_path, args.max_pages)\n        due_date = find_due_date(text)\n        records.append({\"filename\": pdf_path.name, \"due_date\": due_date})\n        logging.info(\"%s -> %s\", pdf_path.name, due_date)\n\n    found_count = sum(1 for r in records if r[\"due_date\"] != \"NOT_FOUND\")\n    logging.info(\"Scanned %d PDFs. Found %d dates.\", len(records), found_count)\n\n    if args.dry_run:\n        print(\"Dry-run active: CSV output skipped.\")\n        return\n\n    try:\n        with open(args.output, \"w\", newline=\"\", encoding=\"utf-8\") as f:\n            writer = csv.DictWriter(f, fieldnames=[\"filename\", \"due_date\"])\n            writer.writeheader()\n            writer.writerows(records)\n        print(f\"Successfully wrote {len(records)} records to {args.output}\")\n    except OSError as err:\n        sys.exit(f\"Error writing output file: {err}\")\n\n\nif __name__ == \"__main__\":\n    main()",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9 or newer is installed on your computer.\n2. Install required dependencies:\n   pip install pypdf\n3. Place tool.py in your project folder or directly alongside your invoices.\n\nHOW IT WORKS\ntool.py scans through PDF documents located in a target directory. For each PDF, it extracts text from the initial pages using pypdf and applies standard regular expression patterns to isolate invoice due dates (e.g., 'Due Date:', 'Payment Due:', 'Pay By:'). Results are compiled into an organized CSV with filenames and dates.\n\nRun basic extraction:\n  python tool.py --dir ./invoices --output due_dates.csv\n\nRun a test run without writing files:\n  python tool.py --dir ./invoices --dry-run\n\nADAPTING IT\n- Custom Patterns: If your vendor uses specific terminology (such as 'Maturity Date:'), add the regular expression directly to the DEFAULT_PATTERNS list in tool.py.\n- Multipage Documents: By default, the tool inspects up to 2 pages where invoice metadata typically lives. You can increase this by passing --max-pages 5.\n- Date Formatting: You can pipe the CSV into date-parsing libraries like pandas or standard datetime to normalize varying formats (YYYY-MM-DD vs MM/DD/YYYY).\n\nLIMITATIONS\n- Scanned documents or image-only PDFs do not contain embedded text layers and cannot be read without external OCR tools like Tesseract.\n- Encrypted or password-protected PDFs will be skipped with a warning.\n\nSUPPORT\nThis software is provided as-is without warranty of any kind. You are responsible for validating output dates against original vendor invoices before executing financial payments.",
+  "product_name": "PDF Invoice Due Date Parser Kit",
+  "product_blurb": "Extract payment deadlines automatically from vendor invoice PDFs directly into a structured CSV. Built for small business accounting workflows to eliminate tedious data entry and avoid late payment penalties.",
+  "pillar": "Extract data from PDFs or text files you own with a short script"
+}

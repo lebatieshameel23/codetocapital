@@ -1,0 +1,52 @@
+{
+  "slug": "merge-shipping-tracking-pandas",
+  "title": "Merge Shipping Tracking into Orders with 10 Lines of Python",
+  "hook_text": "This task eats an hour every Friday",
+  "description": "Automate merging carrier tracking numbers into open customer orders without manual VLOOKUPs. This 10-line Python pandas script matches records instantly and exports clean fulfillment CSVs.",
+  "tags": [
+    "python",
+    "pandas",
+    "vlookup",
+    "excel automation",
+    "ecommerce",
+    "data reconciliation"
+  ],
+  "code": "import pandas as pd\norders = pd.read_csv(\"orders.csv\")\ncarrier = pd.read_csv(\"carrier.csv\")\nmerged = orders.merge(\n    carrier[[\"order_id\", \"tracking\"]],\n    on=\"order_id\",\n    how=\"left\",\n)\nmerged[\"status\"] = \"Shipped\"\nmerged.to_csv(\"out.csv\", index=False)",
+  "beats": [
+    {
+      "voice": "This task eats an hour every Friday. Here's how to make it a single command.",
+      "reveal": 3,
+      "badge": "Automate Friday VLOOKUP",
+      "output": ""
+    },
+    {
+      "voice": "Load your open orders and carrier shipping file directly into pandas.",
+      "reveal": 5,
+      "badge": "Load Two Spreadsheets",
+      "output": ""
+    },
+    {
+      "voice": "A left merge matches tracking numbers to each order ID instantly.",
+      "reveal": 8,
+      "badge": "Fast Left Merge",
+      "output": ""
+    },
+    {
+      "voice": "Stamp the status as shipped and write the updated batch to CSV.",
+      "reveal": 10,
+      "badge": "Batch Fulfilled",
+      "output": "wrote out.csv (450 rows)"
+    },
+    {
+      "voice": "Watch out for duplicate tracking rows in messy carrier exports, especially if...",
+      "reveal": 10,
+      "badge": "Deduplicate Input SKUs",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py: Merge carrier tracking numbers into open customer orders.\n\nReconciles an open orders spreadsheet with a carrier tracking spreadsheet\nusing pandas. Includes deduplication, summary logging, and dry-run mode.\n\"\"\"\n\nimport argparse\nimport logging\nimport sys\nfrom pathlib import Path\nimport pandas as pd\n\n\ndef parse_args():\n    parser = argparse.ArgumentParser(\n        description=\"Merge tracking codes into orders via pandas left join.\"\n    )\n    parser.add_argument(\n        \"--orders\",\n        required=True,\n        type=Path,\n        help=\"Path to open orders CSV file.\",\n    )\n    parser.add_argument(\n        \"--carrier\",\n        required=True,\n        type=Path,\n        help=\"Path to carrier tracking export CSV file.\",\n    )\n    parser.add_argument(\n        \"--key\",\n        default=\"order_id\",\n        help=\"Column name to join on (default: order_id).\",\n    )\n    parser.add_argument(\n        \"--tracking-col\",\n        default=\"tracking\",\n        help=\"Tracking number column in carrier CSV (default: tracking).\",\n    )\n    parser.add_argument(\n        \"--output\",\n        \"-o\",\n        type=Path,\n        default=Path(\"orders_with_tracking.csv\"),\n        help=\"Destination path for updated CSV file.\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Inspect match count without saving the output file.\",\n    )\n    parser.add_argument(\n        \"--drop-duplicates\",\n        action=\"store_true\",\n        help=\"Keep only the first carrier row if duplicate keys exist.\",\n    )\n    return parser.parse_args()\n\n\ndef setup_logger():\n    logging.basicConfig(\n        level=logging.INFO,\n        format=\"%(asctime)s [%(levelname)s] %(message)s\",\n        datefmt=\"%H:%M:%S\",\n    )\n\n\ndef reconcile_orders(\n    orders_path: Path,\n    carrier_path: Path,\n    key: str,\n    tracking_col: str,\n    output_path: Path,\n    drop_dupes: bool,\n    dry_run: bool,\n):\n    if not orders_path.is_file():\n        logging.error(\"Orders file not found: %s\", orders_path)\n        sys.exit(1)\n    if not carrier_path.is_file():\n        logging.error(\"Carrier file not found: %s\", carrier_path)\n        sys.exit(1)\n\n    try:\n        orders_df = pd.read_csv(orders_path)\n        carrier_df = pd.read_csv(carrier_path)\n    except Exception as exc:\n        logging.error(\"Failed to read input files: %s\", exc)\n        sys.exit(1)\n\n    for col, name, df in [\n        (key, \"Orders\", orders_df),\n        (key, \"Carrier\", carrier_df),\n        (tracking_col, \"Carrier\", carrier_df),\n    ]:\n        if col not in df.columns:\n            logging.error(\"Column '%s' missing from %s sheet.\", col, name)\n            sys.exit(1)\n\n    initial_carrier_len = len(carrier_df)\n    if drop_dupes:\n        carrier_df = carrier_df.drop_duplicates(subset=[key], keep=\"first\")\n        removed = initial_carrier_len - len(carrier_df)\n        if removed > 0:\n            logging.info(\"Removed %d duplicate carrier records.\", removed)\n    elif carrier_df[key].duplicated().any():\n        dupe_count = carrier_df[key].duplicated().sum()\n        logging.warning(\n            \"Found %d duplicate keys in carrier export. Use --drop-duplicates \"\n            \"to prevent row multiplication.\",\n            dupe_count,\n        )\n\n    merged = orders_df.merge(\n        carrier_df[[key, tracking_col]],\n        on=key,\n        how=\"left\",\n    )\n\n    matched = merged[tracking_col].notna().sum()\n    unmatched = merged[tracking_col].isna().sum()\n    logging.info(\n        \"Total orders: %d | Matched: %d | Unmatched: %d\",\n        len(orders_df),\n        matched,\n        unmatched,\n    )\n\n    if dry_run:\n        logging.info(\"[Dry Run] Skipping file write. Merged sample:\")\n        logging.info(\"\\n%s\", merged.head(3).to_string(index=False))\n        return\n\n    try:\n        merged.to_csv(output_path, index=False)\n        logging.info(\"Successfully saved %d rows to %s\", len(merged), output_path)\n    except Exception as exc:\n        logging.error(\"Failed to write output CSV: %s\", exc)\n        sys.exit(1)\n\n\ndef main():\n    setup_logger()\n    args = parse_args()\n    reconcile_orders(\n        orders_path=args.orders,\n        carrier_path=args.carrier,\n        key=args.key,\n        tracking_col=args.tracking_col,\n        output_path=args.output,\n        drop_dupes=args.drop_duplicates,\n        dry_run=args.dry_run,\n    )\n\n\nif __name__ == \"__main__\":\n    main()",
+  "kit_readme": "SETUP\nInstall python 3.9+ and pandas:\npip install pandas\n\nHOW IT WORKS\ntool.py accepts two CSV exports: your active customer orders and your shipping carrier export. It joins the tracking column onto your order records using a specified key column (by default 'order_id') via a left join, ensuring all original orders remain intact even if carrier tracking is missing.\n\nRun tool.py with:\npython tool.py --orders orders.csv --carrier carrier.csv --output fulfilled.csv\n\nUse --dry-run to view match counts without writing changes to disk:\npython tool.py --orders orders.csv --carrier carrier.csv --dry-run\n\nADAPTING IT\n- Custom column names: If your files use different header names, use --key \"Invoice\" and --tracking-col \"TrackingNumber\".\n- Multi-carrier handling: If multiple carrier CSVs need to be combined, concatenate them with pandas before passing them into the script.\n\nLIMITATIONS\n- If your carrier CSV contains multiple tracking numbers for a single order ID, standard SQL left joins create duplicate order rows. Use the --drop-duplicates flag to keep only the primary record or aggregate tracking numbers beforehand.\n\nSUPPORT\nProvided as-is without warranty. Community code updates and documentation available via CodeToCapital.",
+  "product_name": "Order Tracking Reconciler Kit",
+  "product_blurb": "Merge carrier shipping tracking numbers into customer order spreadsheets with one command. Saves hours of manual VLOOKUP work while automatically catching unmatched orders and duplicate keys.",
+  "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)"
+}

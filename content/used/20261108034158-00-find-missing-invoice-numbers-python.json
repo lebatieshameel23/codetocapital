@@ -1,0 +1,52 @@
+{
+  "slug": "find-missing-invoice-numbers-python",
+  "title": "Find Missing Invoice Numbers with 9 Lines of Python",
+  "hook_text": "Audit Missing Invoices Fast",
+  "description": "Quickly audit accounting exports to find skipped or missing invoice numbers using Python and pandas. Generates a clean CSV report of sequence gaps to keep your books audit-ready.",
+  "tags": [
+    "python",
+    "pandas",
+    "accounting automation",
+    "bookkeeping",
+    "small business",
+    "audit"
+  ],
+  "code": "import pandas as pd\n\ndf = pd.read_csv(\"invoices.csv\")\nseen = set(df[\"inv_id\"])\nfull = set(range(min(seen), max(seen) + 1))\ngaps = sorted(full - seen)\nout = pd.DataFrame({\"missing_id\": gaps})\nout.to_csv(\"missing.csv\", index=False)\nprint(f\"Found {len(gaps)} missing invoices\")",
+  "beats": [
+    {
+      "voice": "Say you pay an assistant $300 a month to audit ledger sheets for missing invoice numbers.",
+      "reveal": 3,
+      "badge": "$300/mo manual audit",
+      "output": ""
+    },
+    {
+      "voice": "Pull your invoice export into pandas and extract every recorded ID number into a set.",
+      "reveal": 4,
+      "badge": "extract recorded IDs",
+      "output": ""
+    },
+    {
+      "voice": "Build the complete sequence from minimum to maximum, then subtract seen IDs to isolate every missing gap.",
+      "reveal": 6,
+      "badge": "isolate sequence gaps",
+      "output": ""
+    },
+    {
+      "voice": "Export the missing list straight to CSV so you can investigate skipped records instantly.",
+      "reveal": 9,
+      "badge": "audit export ready",
+      "output": "Found 4 missing invoices"
+    },
+    {
+      "voice": "This requires numeric IDs without custom text prefixes, but it saves hours before you spend another dollar.",
+      "reveal": 9,
+      "badge": "needs numeric IDs",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Detect sequence gaps in numeric invoice or transaction logs.\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nimport logging\nimport sys\nfrom pathlib import Path\nimport pandas as pd\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(levelname)s: %(message)s\",\n)\n\n\ndef find_missing_numbers(\n    file_path: Path,\n    column: str,\n    prefix: str = \"\",\n) -> list[int]:\n    \"\"\"Read CSV, strip optional prefix, and find missing sequential numbers.\"\"\"\n    if not file_path.exists():\n        logging.error(f\"Input file not found: {file_path}\")\n        sys.exit(1)\n\n    df = pd.read_csv(file_path)\n    if column not in df.columns:\n        logging.error(f\"Column '{column}' not found in {file_path}\")\n        sys.exit(1)\n\n    series = df[column].dropna().astype(str)\n    if prefix:\n        series = series.str.removeprefix(prefix)\n\n    numeric_ids = pd.to_numeric(series, errors=\"coerce\").dropna().astype(int)\n    if numeric_ids.empty:\n        logging.error(\"No valid numeric IDs found in column.\")\n        return []\n\n    seen = set(numeric_ids)\n    start_id = min(seen)\n    end_id = max(seen)\n    logging.info(f\"Auditing range {start_id} to {end_id} ({len(seen)} records found)\")\n\n    full_range = set(range(start_id, end_id + 1))\n    missing = sorted(full_range - seen)\n    return missing\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Audit sequential numbers in CSV exports to spot missing entries.\"\n    )\n    parser.add_argument(\n        \"--input\",\n        \"-i\",\n        type=Path,\n        required=True,\n        help=\"Path to input CSV export\",\n    )\n    parser.add_argument(\n        \"--column\",\n        \"-c\",\n        default=\"inv_id\",\n        help=\"Column name containing IDs (default: inv_id)\",\n    )\n    parser.add_argument(\n        \"--prefix\",\n        \"-p\",\n        default=\"\",\n        help=\"Optional prefix to strip before checking numbers (e.g., 'INV-')\",\n    )\n    parser.add_argument(\n        \"--output\",\n        \"-o\",\n        type=Path,\n        default=Path(\"missing_invoices.csv\"),\n        help=\"Path for output CSV file (default: missing_invoices.csv)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Scan and report missing IDs without creating an output file\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n    missing = find_missing_numbers(args.input, args.column, args.prefix)\n\n    if not missing:\n        logging.info(\"No sequence gaps found. Sequence is complete.\")\n        return\n\n    logging.info(f\"Found {len(missing)} missing sequence numbers.\")\n\n    if args.dry_run:\n        sample = missing[:10]\n        logging.info(f\"Dry run enabled. First missing IDs: {sample}\")\n        return\n\n    out_df = pd.DataFrame({\"missing_id\": missing})\n    if args.prefix:\n        out_df[\"formatted_id\"] = [f\"{args.prefix}{m}\" for m in missing]\n\n    out_df.to_csv(args.output, index=False)\n    logging.info(f\"Wrote missing report to: {args.output}\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9 or newer is installed on your computer.\n2. Install pandas using terminal or command prompt:\n   pip install pandas\n3. Place tool.py in the directory alongside your billing or accounting export CSV.\n\nHOW IT WORKS\ntool.py reads your transaction or invoice file and isolates the specified ID column. It removes any constant text prefix you configure (such as 'INV-'), converts values to integers, and identifies the minimum and maximum ID in the file. By subtracting observed IDs from the full theoretical range, it discovers every missing sequence number and outputs a tidy CSV report.\n\nQuick run:\npython tool.py --input invoices.csv --column inv_id\n\nTo preview gaps in terminal without creating a file:\npython tool.py --input invoices.csv --dry-run\n\nIf IDs have a prefix:\npython tool.py --input invoices.csv --column invoice_num --prefix \"INV-\"\n\nADAPTING IT\n- Check check numbers, purchase orders, or receipt IDs by passing the respective column header name via the --column flag.\n- Format output rows to match your internal tracking spreadsheet by editing the output DataFrame construction in tool.py.\n\nLIMITATIONS\n- Assumes sequence numbers increase in step sizes of 1 without intentional non-linear jumps.\n- If multiple distinct numbering series share a column without a distinguishing category, run the tool separately on filtered subsets.\n\nSUPPORT\nProvided as-is without warranty. Community code designed for internal business data reconciliation.",
+  "product_name": "Invoice Sequence Auditor",
+  "product_blurb": "Automatically audits accounting CSV exports to catch missing or skipped invoice numbers across sequential ranges. Exports a clean report of gaps so you can resolve bookkeeping discrepancies before tax season.",
+  "pillar": "Spot duplicates or errors in business data with a few lines of pandas"
+}

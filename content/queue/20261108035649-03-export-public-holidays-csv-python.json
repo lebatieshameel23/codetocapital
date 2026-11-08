@@ -1,0 +1,52 @@
+{
+  "slug": "export-public-holidays-csv-python",
+  "title": "Export Public Bank Holidays to CSV with Python",
+  "hook_text": "Sync Bank Holidays Straight to CSV",
+  "description": "Fetch official public and bank holidays directly into a clean CSV using Python and pandas. Automate your annual operations and payroll calendars without manual data entry.",
+  "tags": [
+    "python",
+    "pandas",
+    "automation",
+    "csv",
+    "spreadsheets",
+    "data-analysis"
+  ],
+  "code": "import pandas as pd\n\napi = \"https://date.nager.at/api/v3\"\npath = \"/PublicHolidays/2025/US\"\ndf = pd.read_json(api + path)\nout = df[[\"date\", \"name\"]]\nout.to_csv(\"holidays.csv\", index=False)\nprint(f\"Saved {len(out)} holidays\")",
+  "beats": [
+    {
+      "voice": "There is an open API that syncs every public holiday straight into your scheduling sheet.",
+      "reveal": 4,
+      "badge": "FREE PUBLIC API",
+      "output": ""
+    },
+    {
+      "voice": "Pass the country code and year directly to pandas read_json without needing any API key.",
+      "reveal": 5,
+      "badge": "FETCH JSON",
+      "output": ""
+    },
+    {
+      "voice": "Filter down to the holiday date and name, then write it straight to CSV.",
+      "reveal": 7,
+      "badge": "SELECT COLUMNS",
+      "output": ""
+    },
+    {
+      "voice": "Run it, and you get all eleven official federal holidays cleanly formatted in seconds.",
+      "reveal": 8,
+      "badge": "OUTPUT READY",
+      "output": "Saved 11 holidays"
+    },
+    {
+      "voice": "Regional floating holidays still need a quick review, but stop typing them by hand when...",
+      "reveal": 8,
+      "badge": "FEDERAL VS LOCAL",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Fetch public and bank holidays from the Nager.Date API into CSV.\n\"\"\"\n\nimport argparse\nimport csv\nimport logging\nimport sys\nimport urllib.error\nimport urllib.request\nimport json\nfrom datetime import datetime\n\nAPI_BASE = \"https://date.nager.at/api/v3/PublicHolidays\"\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(levelname)s: %(message)s\"\n)\n\n\ndef fetch_holidays(year: int, country: str) -> list:\n    url = f\"{API_BASE}/{year}/{country.upper()}\"\n    logging.info(f\"Querying {url}...\")\n    req = urllib.request.Request(\n        url,\n        headers={\"User-Agent\": \"HolidayExporter/1.0\"}\n    )\n    try:\n        with urllib.request.urlopen(req, timeout=10) as response:\n            if response.status != 200:\n                logging.error(f\"API returned HTTP status {response.status}\")\n                return []\n            payload = response.read().decode(\"utf-8\")\n            return json.loads(payload)\n    except urllib.error.HTTPError as e:\n        logging.error(f\"HTTP error {e.code}: {e.reason}\")\n        return []\n    except urllib.error.URLError as e:\n        logging.error(f\"Network error: {e.reason}\")\n        return []\n    except json.JSONDecodeError:\n        logging.error(\"Failed to parse API response as JSON.\")\n        return []\n\n\ndef export_to_csv(holidays: list, output_file: str, include_local_name: bool = True):\n    if not holidays:\n        logging.warning(\"No holidays to write.\")\n        return\n\n    fields = [\"date\", \"name\"]\n    if include_local_name:\n        fields.append(\"localName\")\n    fields.extend([\"countryCode\", \"global\"])\n\n    try:\n        with open(output_file, \"w\", newline=\"\", encoding=\"utf-8\") as f:\n            writer = csv.DictWriter(f, fieldnames=fields, extrasaction=\"ignore\")\n            writer.writeheader()\n            for item in holidays:\n                writer.writerow(item)\n        logging.info(f\"Successfully wrote {len(holidays)} records to {output_file}\")\n    except OSError as e:\n        logging.error(f\"Could not write to {output_file}: {e}\")\n\n\ndef parse_args():\n    current_year = datetime.now().year\n    parser = argparse.ArgumentParser(\n        description=\"Export official public and bank holidays into CSV.\"\n    )\n    parser.add_argument(\n        \"--country\",\n        default=\"US\",\n        help=\"Two-letter ISO country code (e.g., US, GB, CA, DE). Default: US\"\n    )\n    parser.add_argument(\n        \"--year\",\n        type=int,\n        default=current_year,\n        help=f\"Year to query. Default: {current_year}\"\n    )\n    parser.add_argument(\n        \"--output\",\n        default=\"holidays.csv\",\n        help=\"Path to output CSV file. Default: holidays.csv\"\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Print results to console without saving to disk.\"\n    )\n    return parser.parse_args()\n\n\ndef main():\n    args = parse_args()\n\n    if args.year < 1970 or args.year > 2099:\n        logging.error(\"Year must be between 1970 and 2099.\")\n        sys.exit(1)\n\n    holidays = fetch_holidays(args.year, args.country)\n    if not holidays:\n        logging.error(\"Failed to retrieve holiday data. Check country code or connection.\")\n        sys.exit(1)\n\n    if args.dry_run:\n        logging.info(f\"DRY RUN: Retrieved {len(holidays)} holidays for {args.country} ({args.year}):\")\n        for h in holidays:\n            print(f\"  {h.get('date')} - {h.get('name')} ({h.get('localName')})\")\n        return\n\n    export_to_csv(holidays, args.output)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed.\n2. tool.py uses only the Python standard library, so no extra pip dependencies are required.\n3. Make executable or run directly with: python tool.py\n\nHOW IT WORKS\n`tool.py` connects to the free public Nager.Date API to retrieve official national and bank holidays for a given country code and calendar year.\nIt validates the HTTP response, handles network timeouts gracefully, extracts the relevant fields (date, standard name, local name, country code, and whether it is a nationwide holiday), and writes them into a clean CSV file.\n\nUsage examples:\n  python tool.py --country US --year 2025\n  python tool.py --country GB --year 2025 --output uk_holidays.csv\n  python tool.py --country CA --year 2025 --dry-run\n\nADAPTING IT\n- To filter only nationwide holidays, inspect the 'global' boolean field in the returned dictionary and skip entries where it is False.\n- To chain multiple years, wrap `fetch_holidays()` in a loop across a range of years and append the lists before exporting.\n- To import into Google Sheets or Microsoft Excel automatically, point your schedule or payroll sheet's external data import to the generated CSV file.\n\nLIMITATIONS\n- Regional and municipal holidays (e.g., individual US state or German federal state exceptions) depend on the upstream coverage of the Nager.Date open dataset.\n- The script requires an active internet connection to query the public API.\n\nSUPPORT\nProvided as-is without warranty. Check upstream API availability at date.nager.at.",
+  "product_name": "Public Holiday CSV Exporter Kit",
+  "product_blurb": "Automate annual calendar updates by exporting official bank and public holidays straight to CSV. Designed for payroll managers and small business operators who need reliable scheduling data without manual entry.",
+  "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet"
+}

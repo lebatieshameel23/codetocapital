@@ -1,0 +1,51 @@
+{
+  "slug": "auto-fit-style-excel-python",
+  "title": "Auto-Fit and Style Raw Excel Sheets with Python",
+  "hook_text": "Myth: You need paid Excel add-ons",
+  "description": "Format raw Excel sheets and auto-fit column widths automatically using openpyxl without buying paid spreadsheet add-ons. Learn how a clean Python script applies currency rules and perfectly sized columns in seconds.",
+  "tags": [
+    "python",
+    "excel",
+    "openpyxl",
+    "automation",
+    "office"
+  ],
+  "code": "import openpyxl as ox\nwb = ox.load_workbook(\"sales.xlsx\")\nws = wb.active\ncd = ws.column_dimensions\nfor col in ws.columns:\n    w = max(len(str(c.value)) for c in col)\n    cd[col[0].column_letter].width = w + 3\nfor c in ws[\"C\"][1:]:\n    c.number_format = \"$#,##0.00\"\nwb.save(\"styled.xlsx\")",
+  "beats": [
+    {
+      "voice": "People think you need paid add-ons to clean up raw Excel exports. That is completely false.",
+      "reveal": 3,
+      "badge": "raw export",
+      "output": ""
+    },
+    {
+      "voice": "Open your workbook and measure every single column in five lines of standard Python.",
+      "reveal": 7,
+      "badge": "auto-fit columns",
+      "output": ""
+    },
+    {
+      "voice": "Target your revenue column and apply standard currency formatting across every row.",
+      "reveal": 9,
+      "badge": "format currency",
+      "output": ""
+    },
+    {
+      "voice": "Save it. Every column snaps to perfect width with proper dollar signs.",
+      "reveal": 10,
+      "badge": "clean sheet",
+      "output": "styled.xlsx saved (4 cols auto-fit)"
+    },
+    {
+      "voice": "Calculated formula cells can throw off text length checks, but you never need expensive software when...",
+      "reveal": 10,
+      "badge": "no paid plugins",
+      "output": ""
+    }
+  ],
+  "kit_code": "import argparse\nimport logging\nimport sys\nfrom pathlib import Path\nimport openpyxl\nfrom openpyxl.styles import Font, PatternFill, Alignment\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%H:%M:%S\",\n)\n\n\ndef style_workbook(\n    input_path: Path,\n    output_path: Path,\n    currency_cols: list[str],\n    header_bg: str = \"1F4E79\",\n    padding: int = 3,\n    dry_run: bool = False,\n) -> None:\n    \"\"\"Auto-fits column widths, styles headers, and applies currency formatting.\"\"\"\n    if not input_path.exists():\n        raise FileNotFoundError(f\"Source file not found: {input_path}\")\n\n    logging.info(\"Loading workbook: %s\", input_path)\n    wb = openpyxl.load_workbook(input_path)\n    ws = wb.active\n    if ws is None:\n        raise ValueError(\"Workbook contains no active worksheet.\")\n\n    # Header styling\n    hdr_font = Font(name=\"Calibri\", size=11, bold=True, color=\"FFFFFF\")\n    hdr_fill = PatternFill(start_color=header_bg, end_color=header_bg, fill_type=\"solid\")\n    align_center = Alignment(horizontal=\"center\", vertical=\"center\")\n\n    for cell in ws[1]:\n        if cell.value is not None:\n            cell.font = hdr_font\n            cell.fill = hdr_fill\n            cell.alignment = align_center\n\n    # Currency formatting on specified columns\n    for col_letter in currency_cols:\n        col_letter_clean = col_letter.strip().upper()\n        if col_letter_clean not in ws.column_dimensions:\n            logging.warning(\"Column %s not found in worksheet.\", col_letter_clean)\n            continue\n        for cell in ws[col_letter_clean][1:]:  # skip header\n            if isinstance(cell.value, (int, float)):\n                cell.number_format = \"$#,##0.00\"\n\n    # Auto-fit column widths\n    for col in ws.columns:\n        col_letter = col[0].column_letter\n        max_len = 0\n        for cell in col:\n            val = cell.value\n            if val is not None:\n                # Avoid excessive width on formula strings\n                display_str = str(val)\n                if not display_str.startswith(\"=\"):\n                    max_len = max(max_len, len(display_str))\n        ws.column_dimensions[col_letter].width = max(max_len + padding, 10)\n\n    if dry_run:\n        logging.info(\"[DRY RUN] Finished styling checks. No file written.\")\n        return\n\n    wb.save(output_path)\n    logging.info(\"Successfully saved styled workbook to: %s\", output_path)\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"Auto-fit column widths and format unstyled Excel sheets.\"\n    )\n    parser.add_argument(\"-i\", \"--input\", required=True, type=Path, help=\"Input .xlsx file\")\n    parser.add_argument(\"-o\", \"--output\", type=Path, help=\"Output path (default: overwrite input)\")\n    parser.add_argument(\n        \"-c\",\n        \"--currency-cols\",\n        nargs=\"*\",\n        default=[\"C\"],\n        help=\"Column letters to format as currency (e.g. -c C D)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Inspect and test widths without writing to disk\",\n    )\n\n    args = parser.parse_args()\n    out_target = args.output if args.output else args.input\n\n    try:\n        style_workbook(\n            input_path=args.input,\n            output_path=out_target,\n            currency_cols=args.currency_cols,\n            dry_run=args.dry_run,\n        )\n    except Exception as exc:\n        logging.error(\"Processing failed: %s\", exc)\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()",
+  "kit_readme": "SETUP\nInstall the required dependency using pip:\n    pip install openpyxl\n\nHOW IT WORKS\ntool.py accepts any standard .xlsx workbook, scans column character lengths, and dynamically assigns optimal column widths so cell text never truncates or overflows.\nIt applies high-contrast styling to header rows and applies standardized accounting currency masks ($#,##0.00) to specified columns.\n\nRun tool.py from your terminal:\n    python tool.py -i raw_report.xlsx -o styled_report.xlsx -c C D\n\nRun safely with a dry-run flag:\n    python tool.py -i raw_report.xlsx --dry-run\n\nADAPTING IT\n- Modify header_bg in style_workbook to match your brand hex colors (default is corporate dark navy '1F4E79').\n- Change the padding argument to add more breathing room to auto-sized columns.\n- To format percentages or dates instead of currency, customize the cell.number_format assignment block.\n\nLIMITATIONS\nCalculated cells storing formulas (e.g., =SUM(A1:A10)) return the formula string rather than the computed numeric output if openpyxl loads the sheet without prior Excel cache generation. Column sizing prioritizes text lengths and skips raw formula strings.\n\nSUPPORT\nProvided as-is without warranty. Open-source MIT terms apply.",
+  "product_name": "Excel Sheet Auto-Styler & Formatter",
+  "product_blurb": "Clean up raw Excel data dumps into client-ready spreadsheets with auto-fitted columns and currency formatting. Eliminates manual resizing and paid add-on subscriptions with a single terminal command.",
+  "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl"
+}
