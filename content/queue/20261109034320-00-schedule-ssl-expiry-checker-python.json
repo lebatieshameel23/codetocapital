@@ -1,0 +1,52 @@
+{
+  "slug": "schedule-ssl-expiry-checker-python",
+  "title": "Check SSL Expiration on a Schedule with Python",
+  "hook_text": "Never Let Your SSL Expire Quietly",
+  "description": "Monitor SSL certificate expiration dates across your domains before visitors encounter scary security warnings. Automate the check in a daily cron job or Task Scheduler script.",
+  "tags": [
+    "python",
+    "devops",
+    "automation",
+    "websecurity",
+    "sysadmin",
+    "coding"
+  ],
+  "code": "import ssl, socket, time\nh = \"example.com\"\nc = ssl.create_default_context()\ns = c.wrap_socket(socket.socket(),\n                  server_hostname=h)\ns.connect((h, 443))\nt = s.getpeercert()[\"notAfter\"]\ne = time.mktime(time.strptime(\n    t, \"%b %d %H:%M:%S %Y %Z\"))\nprint(f\"{h}: {int(e-time.time())//86400}d\")",
+  "beats": [
+    {
+      "voice": "Because an expired SSL certificate will drop your store offline and wipe out daily sales.",
+      "reveal": 0,
+      "badge": "RESULT FIRST",
+      "output": "example.com: 73d"
+    },
+    {
+      "voice": "Wrap a basic Python socket with a standard TLS context and connect on port 443.",
+      "reveal": 6,
+      "badge": "CONNECT SOCKET",
+      "output": ""
+    },
+    {
+      "voice": "Pull the peer certificate, grab its expiry timestamp, and parse it to seconds.",
+      "reveal": 9,
+      "badge": "READ TIMESTAMP",
+      "output": ""
+    },
+    {
+      "voice": "Subtract the current time to get the exact days remaining until expiration.",
+      "reveal": 10,
+      "badge": "CALCULATE DAYS",
+      "output": "example.com: 73d"
+    },
+    {
+      "voice": "Drop this into a daily cron job to alert you at thirty days. Corporate firewalls can block custom socket handshakes, so test network permissions early, because",
+      "reveal": 10,
+      "badge": "AUTOMATE & CRON",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"tool.py - Automated SSL certificate expiration checker.\n\nChecks SSL certificates for a list of domains and exits with non-zero\nstatus if any domain is expired or expires within a set threshold.\nDesigned for cron, Windows Task Scheduler, and CI/CD pipelines.\n\"\"\"\n\nimport argparse\nimport datetime\nimport logging\nimport socket\nimport ssl\nimport sys\nfrom typing import List, Tuple, Optional\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%Y-%m-%d %H:%M:%S\",\n)\n\n\ndef get_cert_expiry(host: str, port: int = 443, timeout: float = 5.0) -> Tuple[Optional[datetime.datetime], Optional[str]]:\n    \"\"\"Connect to host:port over TLS and return the cert expiration datetime.\"\"\"\n    ctx = ssl.create_default_context()\n    try:\n        with socket.create_connection((host, port), timeout=timeout) as sock:\n            with ctx.wrap_socket(sock, server_hostname=host) as ssock:\n                cert = ssock.getpeercert()\n                if not cert or \"notAfter\" not in cert:\n                    return None, \"Certificate returned without notAfter field\"\n                raw_expiry = cert[\"notAfter\"]\n                # OpenSSL standard date format: 'May 15 12:00:00 2025 GMT'\n                fmt = \"%b %d %H:%M:%S %Y %Z\"\n                expiry_dt = datetime.datetime.strptime(raw_expiry, fmt)\n                return expiry_dt, None\n    except (socket.timeout, socket.gaierror, ssl.SSLError, OSError) as err:\n        return None, str(err)\n\n\ndef check_domains(domains: List[str], warn_days: int) -> int:\n    \"\"\"Check all domains. Return count of warnings/errors.\"\"\"\n    failures = 0\n    now = datetime.datetime.utcnow()\n    logging.info(\"Starting SSL check for %d domain(s) (warning threshold: %dd)\", len(domains), warn_days)\n\n    for host in domains:\n        host = host.strip()\n        if not host or host.startswith(\"#\"):\n            continue\n\n        expiry, err = get_cert_expiry(host)\n        if err:\n            logging.error(\"FAILED: %s -> %s\", host, err)\n            failures += 1\n            continue\n\n        days_left = (expiry - now).days\n        if days_left < 0:\n            logging.critical(\"EXPIRED: %s expired %d day(s) ago (%s)\", host, abs(days_left), expiry.date())\n            failures += 1\n        elif days_left <= warn_days:\n            logging.warning(\"EXPIRING SOON: %s expires in %d day(s) (%s)\", host, days_left, expiry.date())\n            failures += 1\n        else:\n            logging.info(\"OK: %s has %d days remaining (%s)\", host, days_left, expiry.date())\n\n    return failures\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Automated SSL expiration monitor for servers and scheduled jobs.\"\n    )\n    parser.add_argument(\n        \"domains\",\n        nargs=\"*\",\n        help=\"Domain names to check (e.g. example.com shop.mysite.com)\",\n    )\n    parser.add_argument(\n        \"-f\", \"--file\",\n        help=\"Path to a text file containing one domain per line.\",\n    )\n    parser.add_argument(\n        \"-w\", \"--warn-days\",\n        type=int,\n        default=30,\n        help=\"Warning threshold in days before expiration (default: 30)\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> None:\n    args = parse_args()\n    domain_list: List[str] = list(args.domains or [])\n\n    if args.file:\n        try:\n            with open(args.file, \"r\", encoding=\"utf-8\") as f:\n                domain_list.extend(line.strip() for line in f if line.strip())\n        except OSError as err:\n            logging.error(\"Could not read domains file: %s\", err)\n            sys.exit(2)\n\n    if not domain_list:\n        logging.error(\"No domains provided. Pass domains as arguments or use -f/--file.\")\n        sys.exit(2)\n\n    issues = check_domains(domain_list, args.warn_days)\n    if issues > 0:\n        logging.warning(\"Completed with %d domain issue(s).\", issues)\n        sys.exit(1)\n\n    logging.info(\"All checked domains are healthy.\")\n    sys.exit(0)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed on your server or local machine.\n2. No third-party packages required; tool.py uses only the Python standard library (ssl, socket, datetime).\n\nHOW IT WORKS\nRun tool.py directly from the command line:\n  python tool.py example.com myshop.com\n\nOr supply a text file with one domain per line:\n  python tool.py -f domains.txt --warn-days 21\n\nThe script connects to port 443 using TLS, parses the exact notAfter field of the returned peer certificate, and calculates days remaining until expiration.\nIf any certificate is expired, within the warning threshold (default: 30 days), or unreachable, the script logs an error/warning and exits with code 1. A clean run exits with code 0.\n\nADAPTING IT\n- Linux (cron): Add a daily entry to alert your team:\n  0 8 * * * /usr/bin/python3 /path/to/tool.py -f /path/to/domains.txt >> /var/log/ssl_check.log 2>&1\n- Windows Task Scheduler: Schedule tool.py daily using python.exe with argument \"-f C:\\sites\\domains.txt\".\n- Notifications: Integrate your team's Slack/Discord webhook or SMTP email by calling your notifier inside check_domains when failures > 0.\n\nLIMITATIONS\n- Requires outbound access on port 443 (firewalls or proxy interceptors may block direct raw socket probes).\n- Does not automatically renew certificates; it provides automated detection and alerting.\n- Only queries public HTTPS endpoints presenting standard X.509 certificates.\n\nSUPPORT\nProvided as-is without warranty. Test across your target domains in a staging environment prior to relying on automated schedules.\n",
+  "product_name": "Scheduled SSL Expiry Monitor Kit",
+  "product_blurb": "A lightweight Python automation kit that monitors SSL certificate expirations across your domains and triggers automated alerts before renewals lapse. Drop it into a daily cron job or Task Scheduler task with zero external dependencies.",
+  "pillar": "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)"
+}

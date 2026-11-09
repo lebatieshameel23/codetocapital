@@ -1,0 +1,52 @@
+{
+  "slug": "summarize-raw-expense-csvs-python",
+  "title": "Summarize Raw Expense CSVs with Python",
+  "hook_text": "Myth: You need paid reporting tools",
+  "description": "Summarize raw transaction exports into category totals using a few lines of Python. Free yourself from paid reporting add-ons and manual spreadsheet copy-pasting.",
+  "tags": [
+    "python",
+    "pandas",
+    "excel automation",
+    "small business",
+    "csv tools",
+    "productivity"
+  ],
+  "code": "import pandas as pd\n\ndf = pd.read_csv(\"expenses.csv\")\ngrouped = df.groupby(\"category\")\nsummary = grouped[\"amount\"].sum().round(2)\nsummary.to_csv(\"summary.csv\")\nprint(\"Saved summary.csv\")",
+  "beats": [
+    {
+      "voice": "You never need paid reporting software just to summarize raw expense spreadsheets.",
+      "reveal": 3,
+      "badge": "BUSTING THE MYTH",
+      "output": ""
+    },
+    {
+      "voice": "Pandas loads the raw file and groups every row by category in memory.",
+      "reveal": 4,
+      "badge": "GROUP BY CATEGORY",
+      "output": ""
+    },
+    {
+      "voice": "It sums the amount column, rounds to pennies, and writes a tidy summary.",
+      "reveal": 6,
+      "badge": "TOTAL AND ROUND",
+      "output": ""
+    },
+    {
+      "voice": "Say you pay an assistant twenty dollars a week to tally exports. That saves over a thousand dollars a year.",
+      "reveal": 7,
+      "badge": "SUMMARY GENERATED",
+      "output": "Saved summary.csv"
+    },
+    {
+      "voice": "This needs uniform column headers and valid numbers, yet it reminds you that...",
+      "reveal": 7,
+      "badge": "CLEAN HEADERS NEEDED",
+      "output": "Saved summary.csv"
+    }
+  ],
+  "kit_code": "\"\"\"\ntool.py - Aggregate and summarize tabular CSV transaction files.\n\nUsage:\n    python tool.py --input expenses.csv --output summary.csv\n    python tool.py --input sales.csv --group-col client --val-col amount --dry-run\n\"\"\"\n\nimport argparse\nimport logging\nimport sys\nfrom pathlib import Path\nimport pandas as pd\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(levelname)s: %(message)s\"\n)\nlogger = logging.getLogger(\"csv_summarizer\")\n\n\ndef parse_args():\n    parser = argparse.ArgumentParser(\n        description=\"Aggregate numeric CSV data by group without paid tools.\"\n    )\n    parser.add_argument(\n        \"-i\", \"--input\",\n        default=\"expenses.csv\",\n        help=\"Path to input CSV file (default: expenses.csv)\"\n    )\n    parser.add_argument(\n        \"-o\", \"--output\",\n        default=\"summary.csv\",\n        help=\"Path to output summary CSV (default: summary.csv)\"\n    )\n    parser.add_argument(\n        \"-g\", \"--group-col\",\n        default=\"category\",\n        help=\"Column name to group by (default: category)\"\n    )\n    parser.add_argument(\n        \"-v\", \"--val-col\",\n        default=\"amount\",\n        help=\"Numeric column name to sum (default: amount)\"\n    )\n    parser.add_argument(\n        \"-d\", \"--dry-run\",\n        action=\"store_true\",\n        help=\"Preview aggregated totals without saving output\"\n    )\n    return parser.parse_args()\n\n\ndef summarize_csv(input_path: Path, group_col: str, val_col: str) -> pd.DataFrame:\n    \"\"\"Reads input CSV, validates columns, and returns grouped totals.\"\"\"\n    if not input_path.exists():\n        raise FileNotFoundError(f\"Input file not found: {input_path}\")\n\n    df = pd.read_csv(input_path)\n\n    # Case-insensitive column resolution\n    cols_lower = {str(c).strip().lower(): c for c in df.columns}\n    target_group = cols_lower.get(group_col.lower())\n    target_val = cols_lower.get(val_col.lower())\n\n    if not target_group:\n        raise ValueError(\n            f\"Grouping column '{group_col}' missing. Available: {list(df.columns)}\"\n        )\n    if not target_val:\n        raise ValueError(\n            f\"Value column '{val_col}' missing. Available: {list(df.columns)}\"\n        )\n\n    # Convert numbers safely, coercing errors to 0.0\n    df[target_val] = pd.to_numeric(df[target_val], errors=\"coerce\").fillna(0.0)\n\n    summary = (\n        df.groupby(target_group)[target_val]\n        .agg([\"count\", \"sum\"])\n        .reset_index()\n    )\n    summary.columns = [group_col, \"transaction_count\", \"total_amount\"]\n    summary[\"total_amount\"] = summary[\"total_amount\"].round(2)\n    summary = summary.sort_values(by=\"total_amount\", ascending=False)\n    return summary\n\n\ndef main():\n    args = parse_args()\n    input_path = Path(args.input)\n    output_path = Path(args.output)\n\n    try:\n        logger.info(f\"Processing '{input_path}'...\")\n        summary = summarize_csv(input_path, args.group_col, args.val_col)\n        logger.info(f\"Grouped into {len(summary)} distinct categories.\")\n\n        if args.dry_run:\n            logger.info(\"Dry run enabled. Terminal preview of summary:\")\n            print(\"\\n\" + summary.to_string(index=False) + \"\\n\")\n            logger.info(\"No file written.\")\n            return\n\n        summary.to_csv(output_path, index=False)\n        logger.info(f\"Successfully saved summary to '{output_path}'.\")\n\n    except FileNotFoundError as err:\n        logger.error(err)\n        sys.exit(1)\n    except ValueError as err:\n        logger.error(err)\n        sys.exit(1)\n    except PermissionError:\n        logger.error(f\"Permission denied writing to '{output_path}'.\")\n        sys.exit(1)\n    except Exception as err:\n        logger.error(f\"Unexpected error: {err}\")\n        sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed on your system.\n2. Install required dependency: pip install pandas\n3. Place your raw CSV file in the same directory as tool.py.\n\nHOW IT WORKS\ntool.py reads your transaction or expense CSV, matches the grouping and value column names regardless of letter case, converts non-numeric anomalies to zeros, aggregates totals and counts, and saves a tidy summary report ordered from highest total to lowest.\n\nRun a dry-run preview in your terminal:\n    python tool.py --input expenses.csv --dry-run\n\nRun and export the finished CSV:\n    python tool.py --input expenses.csv --output monthly_summary.csv\n\nADAPTING IT\nYou can aggregate any spreadsheet by specifying custom columns via CLI arguments:\n    python tool.py -i sales.csv -o client_totals.csv -g ClientName -v Revenue\nTo change aggregation behavior (e.g., adding averages or median calculations), modify the .agg() method inside the summarize_csv function in tool.py.\n\nLIMITATIONS\nRequires tabular CSV formatted files. If your export contains non-standard currency symbols (like '$' or commas inside numbers), strip them upstream or pre-clean strings before numeric conversion. Does not parse multi-tab Excel files directly.\n\nSUPPORT\nProvided as-is for educational and automation utility purposes without warranty. Test thoroughly with --dry-run before using outputs in production accounting workflows.",
+  "product_name": "CSV Category & Expense Summarizer Kit",
+  "product_blurb": "Turn chaotic transaction spreadsheets into structured summary tables with clean command-line automation. Group by client, project, or category and calculate reliable totals without recurring subscription software.",
+  "pillar": "Automate a boring spreadsheet or CSV task with Python"
+}

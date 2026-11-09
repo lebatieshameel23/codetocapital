@@ -41,7 +41,9 @@
     "2026-11-07T12:00:00+02:00": "k1_RnyPBDsE",
     "2026-11-08T12:00:00+02:00": "-Ikbl7dBICs",
     "2026-11-09T12:00:00+02:00": "_lawcSgbH-o",
-    "2026-11-09T18:00:00+02:00": "CAe4BwW2QwI"
+    "2026-11-09T18:00:00+02:00": "CAe4BwW2QwI",
+    "2026-11-10T12:00:00+02:00": "bIPCWH5U9oM",
+    "2026-11-10T18:00:00+02:00": "aqJkEYTEJjk"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -281,6 +283,20 @@
       "pillar": "Automate a boring spreadsheet or CSV task with Python",
       "ep": 34,
       "publishAt": "2026-11-09T16:00:00.000Z"
+    },
+    "bIPCWH5U9oM": {
+      "slug": "merge-shipping-tracking-pandas",
+      "title": "Merge Shipping Tracking into Orders with 10 Lines of Python",
+      "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)",
+      "ep": 35,
+      "publishAt": "2026-11-10T10:00:00.000Z"
+    },
+    "aqJkEYTEJjk": {
+      "slug": "export-public-holidays-csv-python",
+      "title": "Export Public Bank Holidays to CSV with Python",
+      "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet",
+      "ep": 36,
+      "publishAt": "2026-11-10T16:00:00.000Z"
     }
   },
   "replied": []
