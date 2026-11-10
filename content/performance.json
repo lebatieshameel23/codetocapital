@@ -1,18 +1,18 @@
 {
-  "updated": "2026-11-09T03:40:23.162626+00:00",
-  "videos_scored": 28,
+  "updated": "2026-11-10T03:34:16.605905+00:00",
+  "videos_scored": 30,
   "pillar_weights": {
-    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.59,
-    "Rename, sort or clean up hundreds of files in one command": 1.23,
-    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.99,
-    "Build a formatted Excel report from raw data with pandas and openpyxl": 1.22,
-    "Automate a boring spreadsheet or CSV task with Python": 0.71,
-    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.78,
-    "Spot duplicates or errors in business data with a few lines of pandas": 0.56,
-    "Use an AI/LLM API call to classify, summarise or tag messy text": 0.39,
-    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.79,
-    "Extract data from PDFs or text files you own with a short script": 2.28,
-    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.71
+    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.65,
+    "Rename, sort or clean up hundreds of files in one command": 1.31,
+    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.85,
+    "Build a formatted Excel report from raw data with pandas and openpyxl": 1.29,
+    "Automate a boring spreadsheet or CSV task with Python": 0.76,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.83,
+    "Spot duplicates or errors in business data with a few lines of pandas": 0.59,
+    "Use an AI/LLM API call to classify, summarise or tag messy text": 0.42,
+    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.84,
+    "Extract data from PDFs or text files you own with a short script": 2.46,
+    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.52
   },
   "top": [
     "Extract Invoice Totals from PDFs with 10 Lines of Python",
@@ -22,8 +22,8 @@
     "Stop Using VLOOKUP: Reconcile Spreadsheets in Python"
   ],
   "bottom": [
-    "Find Unpaid Invoices Across Two Sheets with Python",
-    "Sort Hundreds of Files into Folders with 8 Lines of Python",
-    "Parse Daily Sales Logs into CSV with 9 Lines of Python"
+    "Parse Daily Sales Logs into CSV with 9 Lines of Python",
+    "Get Email Alerts When a File Updates in Python",
+    "Safely Triage Newsletter Subscriptions with Python"
   ]
 }

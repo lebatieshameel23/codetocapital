@@ -1,0 +1,52 @@
+{
+  "slug": "lookup-zip-codes-python",
+  "title": "Lookup City and State from ZIP Codes in Python",
+  "hook_text": "You don't need paid tools for this",
+  "description": "Stop paying monthly fees just to populate city and state columns from postal codes. This Python script queries a free public postal API and saves the matched locations into a ready-to-use CSV.",
+  "tags": [
+    "python",
+    "automation",
+    "api",
+    "smallbusiness",
+    "csv",
+    "developer"
+  ],
+  "code": "import csv, requests\nrows = [[\"zip\", \"city\", \"state\"]]\nfor z in [\"90210\", \"10001\", \"60601\"]:\n    u = f\"https://api.zippopotam.us/us/{z}\"\n    p = requests.get(u).json()[\"places\"][0]\n    city, st = p[\"place name\"], p[\"state\"]\n    rows.append([z, city, st])\nwith open(\"out.csv\", \"w\", newline=\"\") as f:\n    csv.writer(f).writerows(rows)",
+  "beats": [
+    {
+      "voice": "You don't need paid software to match ZIP codes to cities and states.",
+      "reveal": 2,
+      "badge": "Myth: Paid ZIP APIs",
+      "output": ""
+    },
+    {
+      "voice": "Free public postal APIs provide full location data with zero API keys or logins required.",
+      "reveal": 4,
+      "badge": "Free Public Postal API",
+      "output": ""
+    },
+    {
+      "voice": "Pass each code into the request URL, grab the parsed place data, and unpack the city and state.",
+      "reveal": 7,
+      "badge": "Extract City & State",
+      "output": ""
+    },
+    {
+      "voice": "Then dump the entire table directly into a clean CSV spreadsheet.",
+      "reveal": 9,
+      "badge": "Wrote out.csv",
+      "output": "wrote 3 postal records to out.csv"
+    },
+    {
+      "voice": "It only resolves postal districts rather than street addresses, saving you from recurring subscription fees, because...",
+      "reveal": 9,
+      "badge": "No Street Validation",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"\ntool.py - Batch lookup city, state, and geographic data from postal codes.\nCodeToCapital Automation Kit.\n\"\"\"\n\nimport argparse\nimport csv\nimport logging\nimport os\nimport sys\nimport time\nimport requests\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%H:%M:%S\",\n)\n\nAPI_BASE = \"https://api.zippopotam.us\"\n\n\ndef parse_args():\n    parser = argparse.ArgumentParser(\n        description=\"Lookup city and state from postal codes using a free public API.\"\n    )\n    parser.add_argument(\n        \"--country\",\n        default=\"us\",\n        help=\"Two-letter country code (e.g., us, ca, gb, de). Default: us\",\n    )\n    parser.add_argument(\n        \"--input\",\n        \"-i\",\n        help=\"Path to input CSV or TXT file containing postal codes.\",\n    )\n    parser.add_argument(\n        \"--zips\",\n        \"-z\",\n        nargs=\"+\",\n        help=\"List of postal codes passed directly via CLI.\",\n    )\n    parser.add_argument(\n        \"--output\",\n        \"-o\",\n        default=\"postal_lookup.csv\",\n        help=\"Output CSV filename. Default: postal_lookup.csv\",\n    )\n    parser.add_argument(\n        \"--delay\",\n        type=float,\n        default=0.2,\n        help=\"Delay in seconds between requests to avoid rate limits. Default: 0.2\",\n    )\n    return parser.parse_args()\n\n\ndef load_postal_codes(args):\n    codes = []\n    if args.zips:\n        codes.extend([str(z).strip() for z in args.zips])\n    if args.input:\n        if not os.path.exists(args.input):\n            logging.error(\"Input file not found: %s\", args.input)\n            sys.exit(1)\n        with open(args.input, \"r\", encoding=\"utf-8\") as f:\n            reader = csv.reader(f)\n            for row in reader:\n                if row and row[0].strip():\n                    codes.append(row[0].strip())\n    if not codes:\n        # Default fallback sample\n        codes = [\"90210\", \"10001\", \"60601\", \"30301\", \"98101\"]\n        logging.info(\"No input provided; using default demo postal codes.\")\n    return sorted(list(dict.fromkeys(codes)))\n\n\ndef fetch_location(country, postal_code):\n    url = f\"{API_BASE}/{country}/{postal_code}\"\n    try:\n        res = requests.get(url, timeout=5)\n        if res.status_code == 404:\n            logging.warning(\"Postal code not found: %s\", postal_code)\n            return None\n        res.raise_for_status()\n        data = res.json()\n        places = data.get(\"places\", [])\n        if not places:\n            return None\n        first = places[0]\n        return {\n            \"postal_code\": postal_code,\n            \"country\": data.get(\"country\", country.upper()),\n            \"city\": first.get(\"place name\", \"\"),\n            \"state\": first.get(\"state\", \"\"),\n            \"state_code\": first.get(\"state abbreviation\", \"\"),\n            \"latitude\": first.get(\"latitude\", \"\"),\n            \"longitude\": first.get(\"longitude\", \"\"),\n        }\n    except requests.exceptions.RequestException as e:\n        logging.error(\"Network error for %s: %s\", postal_code, e)\n        return None\n\n\ndef main():\n    args = parse_args()\n    postal_codes = load_postal_codes(args)\n    logging.info(\"Starting lookup for %d postal codes (%s)...\", len(postal_codes), args.country.upper())\n\n    fieldnames = [\"postal_code\", \"country\", \"city\", \"state\", \"state_code\", \"latitude\", \"longitude\"]\n    results = []\n\n    for idx, code in enumerate(postal_codes, start=1):\n        info = fetch_location(args.country.lower(), code)\n        if info:\n            results.append(info)\n        else:\n            results.append({\n                \"postal_code\": code,\n                \"country\": args.country.upper(),\n                \"city\": \"NOT_FOUND\",\n                \"state\": \"\",\n                \"state_code\": \"\",\n                \"latitude\": \"\",\n                \"longitude\": \"\",\n            })\n        if idx % 10 == 0 or idx == len(postal_codes):\n            logging.info(\"Processed %d/%d\", idx, len(postal_codes))\n        time.sleep(args.delay)\n\n    with open(args.output, \"w\", newline=\"\", encoding=\"utf-8\") as f:\n        writer = csv.DictWriter(f, fieldnames=fieldnames)\n        writer.writeheader()\n        writer.writerows(results)\n\n    logging.info(\"Finished! Saved %d records to %s\", len(results), args.output)\n\n\nif __name__ == \"__main__\":\n    main()",
+  "kit_readme": "SETUP\n1. Ensure you have Python 3.8 or later installed.\n2. Install required package:\n   pip install requests\n\nHOW IT WORKS\nRun the CLI script directly using demo values or supply your own:\n   python tool.py\n\nTo pass specific postal codes:\n   python tool.py --zips 90210 10001 75001 30301\n\nTo process a CSV or TXT file of postal codes (first column used):\n   python tool.py --input customers_zips.csv --output matched_cities.csv\n\nFor international postal lookups (e.g., Canada, Germany, UK):\n   python tool.py --country ca --zips M5V2T6 K1P1J1\n\nADAPTING IT\n- To enrich customer orders, integrate tool.py directly into your fulfillment pipeline before generating shipping labels.\n- Adjust the --delay flag if you are processing large batches to stay respectful of open API community infrastructure.\n\nLIMITATIONS\nThis script matches postal code boundaries and geographic centroids. It does not validate individual street addresses, building numbers, or delivery route status.\n\nSUPPORT\nProvided as-is without warranty. Community support available via CodeToCapital.",
+  "product_name": "Python Postal Code to City & State Extractor Kit",
+  "product_blurb": "Batch resolve postal codes into clean city, state, and geographic coordinate records without monthly subscription fees. Features CLI controls, multi-country support, and automatic CSV reporting.",
+  "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet"
+}

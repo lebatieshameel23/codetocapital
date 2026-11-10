@@ -1,0 +1,52 @@
+{
+  "slug": "summarize-customer-feedback-fast-python",
+  "title": "Summarize Customer Feedback Fast with Python",
+  "hook_text": "Summarize messy feedback fast",
+  "description": "Turn messy customer survey dumps into clean actionable summaries using Python and a local LLM. Save hours of reading through raw text while keeping customer data completely private.",
+  "tags": [
+    "python",
+    "automation",
+    "localllm",
+    "customerfeedback",
+    "programming",
+    "ollama"
+  ],
+  "code": "import requests\nurl = \"http://localhost:11434/api/generate\"\ntxt = open(\"feedback.txt\").read()\npayload = {\"model\": \"llama3.2\",\n \"prompt\": \"One-line summary:\\n\" + txt,\n \"stream\": False}\nres = requests.post(url, json=payload)\nprint(res.json()[\"response\"].strip())",
+  "beats": [
+    {
+      "voice": "A twenty-page survey dump boiled down to the exact bug in one second.",
+      "reveal": 0,
+      "badge": "Instant Summary",
+      "output": "Summary: Negative. Checkout failed on Safari."
+    },
+    {
+      "voice": "Read your raw feedback text file straight into memory.",
+      "reveal": 3,
+      "badge": "Read Feedback",
+      "output": ""
+    },
+    {
+      "voice": "Point a quick request payload to your local AI engine asking for a one-line takeaway.",
+      "reveal": 6,
+      "badge": "Local AI Prompt",
+      "output": ""
+    },
+    {
+      "voice": "Post the request and pull out the clean answer automatically without reading endless rants.",
+      "reveal": 8,
+      "badge": "One Line Result",
+      "output": "Summary: Negative. Checkout failed on Safari."
+    },
+    {
+      "voice": "Local models need enough RAM to run smoothly, but it stops hours of manual reading, especially when you need...",
+      "reveal": 8,
+      "badge": "Requires Local RAM",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Summarize customer feedback batches using a local LLM.\n\nSends raw feedback files to a local Ollama instance and exports\nstructured summaries to a consolidated text report.\n\"\"\"\n\nimport argparse\nimport logging\nfrom pathlib import Path\nimport sys\nimport requests\n\nDEFAULT_URL = \"http://localhost:11434/api/generate\"\nDEFAULT_MODEL = \"llama3.2\"\nDEFAULT_PROMPT = (\n    \"Summarize this customer feedback in two lines:\\n\"\n    \"1. Overall Sentiment & Main Topic\\n\"\n    \"2. Action Item or Bug Reported\\n\\nFeedback:\\n\"\n)\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Summarize customer feedback files using local LLM.\"\n    )\n    parser.add_argument(\n        \"--input\",\n        \"-i\",\n        type=Path,\n        required=True,\n        help=\"Path to feedback file (.txt) or directory of feedback files.\",\n    )\n    parser.add_argument(\n        \"--output\",\n        \"-o\",\n        type=Path,\n        default=Path(\"feedback_summary.txt\"),\n        help=\"Path to save consolidated summary output.\",\n    )\n    parser.add_argument(\n        \"--model\",\n        \"-m\",\n        default=DEFAULT_MODEL,\n        help=f\"Ollama model name (default: {DEFAULT_MODEL}).\",\n    )\n    parser.add_argument(\n        \"--url\",\n        default=DEFAULT_URL,\n        help=f\"Ollama API endpoint (default: {DEFAULT_URL}).\",\n    )\n    parser.add_argument(\n        \"--verbose\",\n        \"-v\",\n        action=\"store_true\",\n        help=\"Print detailed logs during execution.\",\n    )\n    return parser.parse_args()\n\n\ndef query_llm(url: str, model: str, text: str) -> str:\n    payload = {\n        \"model\": model,\n        \"prompt\": DEFAULT_PROMPT + text,\n        \"stream\": False,\n    }\n    response = requests.post(url, json=payload, timeout=60)\n    response.raise_for_status()\n    data = response.json()\n    return data.get(\"response\", \"\").strip()\n\n\ndef main() -> int:\n    args = parse_args()\n    level = logging.DEBUG if args.verbose else logging.INFO\n    logging.basicConfig(level=level, format=\"%(levelname)s: %(message)s\")\n\n    target_files = []\n    if args.input.is_file():\n        target_files.append(args.input)\n    elif args.input.is_dir():\n        target_files.extend(sorted(args.input.glob(\"*.txt\")))\n    else:\n        logging.error(\"Input path '%s' does not exist.\", args.input)\n        return 1\n\n    if not target_files:\n        logging.warning(\"No .txt files found to process.\")\n        return 0\n\n    summaries = []\n    for idx, filepath in enumerate(target_files, start=1):\n        logging.info(\"Processing [%d/%d]: %s\", idx, len(target_files), filepath.name)\n        try:\n            content = filepath.read_text(encoding=\"utf-8\").strip()\n            if not content:\n                logging.warning(\"Skipping empty file: %s\", filepath.name)\n                continue\n            result = query_llm(args.url, args.model, content)\n            entry = f\"=== {filepath.name} ===\\n{result}\\n\"\n            summaries.append(entry)\n        except requests.exceptions.ConnectionError:\n            logging.error(\"Failed to connect to Ollama at %s. Is it running?\", args.url)\n            return 1\n        except Exception as err:\n            logging.error(\"Error processing %s: %s\", filepath.name, err)\n\n    if summaries:\n        args.output.write_text(\"\\n\".join(summaries), encoding=\"utf-8\")\n        logging.info(\"Wrote %d summaries to %s\", len(summaries), args.output)\n    else:\n        logging.warning(\"No summaries generated.\")\n\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())",
+  "kit_readme": "FEEDBACK SUMMARIZER SETUP & USAGE\n\nSETUP\n1. Ensure Python 3.9+ is installed.\n2. Install required dependencies:\n   pip install requests\n3. Install Ollama from https://ollama.com and start the service.\n4. Pull a lightweight model (e.g. Llama 3.2):\n   ollama pull llama3.2\n\nHOW IT WORKS\n`tool.py` reads individual feedback files or an entire folder of `.txt` documents,\nsends each entry to your local Ollama API instance, and aggregates structured\ntwo-line summaries (Sentiment + Action Item) into an output text file.\n\nRun against a single file:\npython tool.py --input raw_review.txt\n\nRun against an entire batch folder:\npython tool.py --input ./survey_responses/ --output weekly_report.txt\n\nADAPTING IT\n- Customize `DEFAULT_PROMPT` inside `tool.py` to extract specific tags, NPS categories, or department routing.\n- Pass `--model mistral` or `--model llama3` to trade off processing speed against analytical nuance.\n\nLIMITATIONS\nLocal LLMs require sufficient RAM (minimum 8GB system RAM recommended for 3B parameter models). Processing time scales with document count and text length. Extremely long documents exceeding model context limits will be truncated.\n\nSUPPORT\nDistributed under the MIT License without warranty. Provided for local productivity automation.",
+  "product_name": "Local Feedback Summarizer CLI",
+  "product_blurb": "Condense overwhelming customer review dumps and survey files into structured two-line action summaries automatically. Runs entirely on your local machine using Ollama so customer data never leaves your network.",
+  "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text"
+}
