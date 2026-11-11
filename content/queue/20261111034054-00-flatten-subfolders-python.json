@@ -1,0 +1,52 @@
+{
+  "slug": "flatten-subfolders-python",
+  "title": "Flatten Cluttered Subfolders in 10 Lines of Python",
+  "hook_text": "Flatten nested folders instantly",
+  "description": "Stop digging through nested directories just to move files by hand. Use this 10-line Python script to flatten deeply nested folders into one destination.",
+  "tags": [
+    "python",
+    "automation",
+    "fileorganizer",
+    "coding",
+    "productivity",
+    "sysadmin"
+  ],
+  "code": "from pathlib import Path\nimport shutil\nsrc, dst = Path(\"nested\"), Path(\"flat\")\ndst.mkdir(exist_ok=True)\nfor f in src.rglob(\"*\"):\n    if f.is_file():\n        target = dst / f.name\n        if not target.exists():\n            shutil.move(f, target)\nprint(\"Flattened files into\", dst)",
+  "beats": [
+    {
+      "voice": "Forty-two files trapped across nested subfolders, pulled into one folder instantly.",
+      "reveal": 0,
+      "badge": "Result first",
+      "output": "Flattened files into flat"
+    },
+    {
+      "voice": "Stop clicking through layers of directories just to drag documents out by hand.",
+      "reveal": 4,
+      "badge": "Target directory",
+      "output": ""
+    },
+    {
+      "voice": "Pathlib searches every subfolder recursively with rglob and grabs only raw files.",
+      "reveal": 7,
+      "badge": "Recursive search",
+      "output": ""
+    },
+    {
+      "voice": "Shutil moves each item into your flat directory, safely skipping existing files.",
+      "reveal": 9,
+      "badge": "Safe migration",
+      "output": "Flattened files into flat"
+    },
+    {
+      "voice": "This basic script skips name collisions, so check for duplicate filenames before moving...",
+      "reveal": 10,
+      "badge": "Watch duplicates",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"tool.py - Flatten nested directory structures safely.\n\nRecursively scans a source folder and consolidates all files into a\nsingle flat destination directory with conflict handling and dry-run mode.\n\"\"\"\n\nimport argparse\nimport logging\nfrom pathlib import Path\nimport shutil\nimport sys\n\n\ndef setup_logging(verbose: bool) -> None:\n    level = logging.DEBUG if verbose else logging.INFO\n    logging.basicConfig(level=level, format=\"%(levelname)s: %(message)s\")\n\n\ndef resolve_collision(target: Path, mode: str) -> Path | None:\n    \"\"\"Handle destination filename collisions based on policy.\"\"\"\n    if not target.exists():\n        return target\n    if mode == \"skip\":\n        return None\n    if mode == \"overwrite\":\n        return target\n    if mode == \"rename\":\n        stem = target.stem\n        suffix = target.suffix\n        counter = 1\n        while True:\n            candidate = target.with_name(f\"{stem}_{counter}{suffix}\")\n            if not candidate.exists():\n                return candidate\n            counter += 1\n    return None\n\n\ndef flatten_folders(\n    src: Path,\n    dst: Path,\n    dry_run: bool = True,\n    conflict: str = \"rename\",\n    copy_only: bool = False,\n) -> tuple[int, int]:\n    \"\"\"Traverse src recursively and relocate files to dst.\"\"\"\n    if not src.exists() or not src.is_dir():\n        logging.error(f\"Source folder does not exist: {src}\")\n        return 0, 0\n\n    if not dry_run:\n        dst.mkdir(parents=True, exist_ok=True)\n\n    processed = 0\n    skipped = 0\n\n    for item in src.rglob(\"*\"):\n        if not item.is_file():\n            continue\n\n        # Prevent processing files already in dst if dst is inside src\n        if dst in item.parents:\n            continue\n\n        destination_path = resolve_collision(dst / item.name, conflict)\n        if destination_path is None:\n            logging.warning(f\"Skipping collision: {item.name}\")\n            skipped += 1\n            continue\n\n        action_verb = \"Copying\" if copy_only else \"Moving\"\n        if dry_run:\n            logging.info(f\"[DRY-RUN] {action_verb} {item} -> {destination_path}\")\n        else:\n            try:\n                if copy_only:\n                    shutil.copy2(item, destination_path)\n                else:\n                    shutil.move(item, destination_path)\n                logging.debug(f\"{action_verb} {item.name} -> {destination_path.name}\")\n            except (OSError, shutil.Error) as err:\n                logging.error(f\"Failed to transfer {item}: {err}\")\n                skipped += 1\n                continue\n\n        processed += 1\n\n    return processed, skipped\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"Flatten nested folders into a single clean directory.\"\n    )\n    parser.add_argument(\n        \"--src\", required=True, type=Path, help=\"Source nested folder\"\n    )\n    parser.add_argument(\n        \"--dst\", required=True, type=Path, help=\"Destination flat folder\"\n    )\n    parser.add_argument(\n        \"--execute\",\n        action=\"store_true\",\n        help=\"Apply changes to disk. Defaults to dry-run mode if omitted.\",\n    )\n    parser.add_argument(\n        \"--copy\",\n        action=\"store_true\",\n        help=\"Copy files instead of moving them.\",\n    )\n    parser.add_argument(\n        \"--conflict\",\n        choices=[\"rename\", \"skip\", \"overwrite\"],\n        default=\"rename\",\n        help=\"Collision strategy: rename (default), skip, or overwrite.\",\n    )\n    parser.add_argument(\n        \"-v\", \"--verbose\", action=\"store_true\", help=\"Enable verbose output\"\n    )\n\n    args = parser.parse_args()\n    setup_logging(args.verbose)\n\n    is_dry_run = not args.execute\n    if is_dry_run:\n        logging.info(\"Running in DRY-RUN mode. Pass --execute to make changes.\")\n\n    moved, skipped = flatten_folders(\n        src=args.src,\n        dst=args.dst,\n        dry_run=is_dry_run,\n        conflict=args.conflict,\n        copy_only=args.copy,\n    )\n\n    status = \"Dry-run complete\" if is_dry_run else \"Finished\"\n    logging.info(f\"{status}: {moved} processed, {skipped} skipped.\")\n\n\nif __name__ == \"__main__\":\n    main()",
+  "kit_readme": "SETUP\ntool.py uses only the Python standard library (pathlib, shutil, argparse, logging).\nNo third-party package installations or virtual environments are required.\nRun with Python 3.10 or higher:\n    python tool.py --help\n\nHOW IT WORKS\nThe script recursively traverses the specified source folder using pathlib.rglob('*').\nFor every file encountered, it checks whether a file with the same name already exists in the destination folder.\nBy default, it operates in safe DRY-RUN mode, printing planned moves without writing to disk.\nWhen run with --execute, it transfers each file into the destination folder.\nIf a name collision occurs, tool.py can automatically append a numbered suffix (_1, _2), skip the file, or overwrite based on the --conflict parameter.\n\nADAPTING IT\n- To copy files while preserving the original structure intact, pass the --copy flag.\n- To skip files with duplicate names instead of auto-renaming, pass --conflict skip.\n- To filter for specific extensions (e.g. only .pdf or .csv), edit the loop in flatten_folders() to inspect item.suffix.\n\nLIMITATIONS\n- Large file moves across different physical disk drives or network mounts will execute as copy-then-delete, which takes longer than same-drive moves.\n- If destination sits inside source, passing custom paths requires verifying you do not re-scan the destination folder.\n\nSUPPORT\nProvided as-is without warranty. Always run in default dry-run mode to verify the output list before passing --execute.",
+  "product_name": "Folder Flattener CLI Kit",
+  "product_blurb": "Extracts and consolidates files trapped in deeply nested folder trees into a single destination. Includes dry-run protection, automated collision renaming, and zero external dependencies.",
+  "pillar": "Rename, sort or clean up hundreds of files in one command"
+}

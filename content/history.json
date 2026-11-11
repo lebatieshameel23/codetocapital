@@ -45,7 +45,9 @@
     "2026-11-10T12:00:00+02:00": "bIPCWH5U9oM",
     "2026-11-10T18:00:00+02:00": "aqJkEYTEJjk",
     "2026-11-11T12:00:00+02:00": "5y9GkOHnKSo",
-    "2026-11-11T18:00:00+02:00": "iCfTaYeGb1I"
+    "2026-11-11T18:00:00+02:00": "iCfTaYeGb1I",
+    "2026-11-12T12:00:00+02:00": "XE2rroaRkow",
+    "2026-11-12T18:00:00+02:00": "LiiLoycZRlc"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -313,6 +315,20 @@
       "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl",
       "ep": 38,
       "publishAt": "2026-11-11T16:00:00.000Z"
+    },
+    "XE2rroaRkow": {
+      "slug": "schedule-ssl-expiry-checker-python",
+      "title": "Check SSL Expiration on a Schedule with Python",
+      "pillar": "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)",
+      "ep": 39,
+      "publishAt": "2026-11-12T10:00:00.000Z"
+    },
+    "LiiLoycZRlc": {
+      "slug": "summarize-raw-expense-csvs-python",
+      "title": "Summarize Raw Expense CSVs with Python",
+      "pillar": "Automate a boring spreadsheet or CSV task with Python",
+      "ep": 40,
+      "publishAt": "2026-11-12T16:00:00.000Z"
     }
   },
   "replied": []

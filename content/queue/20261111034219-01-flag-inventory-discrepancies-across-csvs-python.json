@@ -1,0 +1,52 @@
+{
+  "slug": "flag-inventory-discrepancies-across-csvs-python",
+  "title": "Flag Inventory Discrepancies Across CSVs with Python",
+  "hook_text": "You don't need paid tools for this",
+  "description": "Reconcile physical warehouse scans against your store inventory CSV in seconds with pandas. This automated Python snippet isolates stock variances without expensive monthly subscriptions.",
+  "tags": [
+    "python",
+    "pandas",
+    "inventory",
+    "automation",
+    "smallbusiness",
+    "spreadsheets"
+  ],
+  "code": "import pandas as pd\nw = pd.read_csv(\"scan.csv\")\ns = pd.read_csv(\"system.csv\")\ndf = w.merge(s, on=\"sku\")\ndf[\"diff\"] = df[\"counted\"] - df[\"system\"]\nbad = df[df[\"diff\"] != 0]\nbad.to_csv(\"mismatch.csv\", index=False)\nprint(f\"Flagged {len(bad)} mismatches\")",
+  "beats": [
+    {
+      "voice": "You don't need paid inventory software to spot stock discrepancies across your spreadsheets.",
+      "reveal": 3,
+      "badge": "MYTH BUSTED",
+      "output": ""
+    },
+    {
+      "voice": "Load your physical count and your POS export, then merge both sheets on the SKU column.",
+      "reveal": 4,
+      "badge": "MERGE ON SKU",
+      "output": ""
+    },
+    {
+      "voice": "Subtract recorded inventory from what was actually counted, and isolate every row with a variance.",
+      "reveal": 6,
+      "badge": "ISOLATE VARIANCES",
+      "output": ""
+    },
+    {
+      "voice": "Run the script, and pandas writes every mismatch directly to a clean audit CSV.",
+      "reveal": 8,
+      "badge": "AUDIT SAVED",
+      "output": "Flagged 14 mismatches"
+    },
+    {
+      "voice": "This assumes clean matching SKUs across both files, but it solves the manual lookup grind because...",
+      "reveal": 8,
+      "badge": "NEEDS EXACT SKUS",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py: Reconcile warehouse physical scans against POS inventory exports.\"\"\"\n\nimport argparse\nimport logging\nfrom pathlib import Path\nimport pandas as pd\n\n\ndef setup_logging() -> None:\n    logging.basicConfig(\n        level=logging.INFO,\n        format=\"%(levelname)s: %(message)s\"\n    )\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Reconcile physical inventory counts against system records.\"\n    )\n    parser.add_argument(\n        \"--scan\",\n        \"-s\",\n        required=True,\n        type=Path,\n        help=\"Path to the physical count CSV file.\",\n    )\n    parser.add_argument(\n        \"--system\",\n        \"-y\",\n        required=True,\n        type=Path,\n        help=\"Path to the system inventory CSV file.\",\n    )\n    parser.add_argument(\n        \"--output\",\n        \"-o\",\n        default=Path(\"inventory_mismatches.csv\"),\n        type=Path,\n        help=\"Path for the output discrepancies CSV (default: inventory_mismatches.csv).\",\n    )\n    parser.add_argument(\n        \"--sku-col\",\n        default=\"sku\",\n        help=\"Column name representing the item SKU in both files (default: sku).\",\n    )\n    parser.add_argument(\n        \"--scan-col\",\n        default=\"counted\",\n        help=\"Quantity column name in the physical scan file (default: counted).\",\n    )\n    parser.add_argument(\n        \"--system-col\",\n        default=\"system\",\n        help=\"Quantity column name in the system export file (default: system).\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> None:\n    setup_logging()\n    args = parse_args()\n\n    if not args.scan.is_file():\n        logging.error(f\"Physical scan file not found: {args.scan}\")\n        return\n\n    if not args.system.is_file():\n        logging.error(f\"System inventory file not found: {args.system}\")\n        return\n\n    try:\n        df_scan = pd.read_csv(args.scan)\n        df_sys = pd.read_csv(args.system)\n    except Exception as exc:\n        logging.error(f\"Failed to read input files: {exc}\")\n        return\n\n    # Validate expected columns\n    for df, col, name in [\n        (df_scan, args.sku_col, \"scan\"),\n        (df_scan, args.scan_col, \"scan\"),\n        (df_sys, args.sku_col, \"system\"),\n        (df_sys, args.system_col, \"system\"),\n    ]:\n        if col not in df.columns:\n            logging.error(f\"Column '{col}' missing from {name} CSV.\")\n            return\n\n    # Normalize SKU casing and whitespace for robust matching\n    df_scan[args.sku_col] = df_scan[args.sku_col].astype(str).str.strip()\n    df_sys[args.sku_col] = df_sys[args.sku_col].astype(str).str.strip()\n\n    merged = pd.merge(\n        df_scan[[args.sku_col, args.scan_col]],\n        df_sys[[args.sku_col, args.system_col]],\n        on=args.sku_col,\n        how=\"outer\",\n    ).fillna(0)\n\n    merged[\"variance\"] = merged[args.scan_col] - merged[args.system_col]\n    mismatches = merged[merged[\"variance\"] != 0].copy()\n\n    try:\n        mismatches.to_csv(args.output, index=False)\n        logging.info(f\"Processed {len(merged)} total items.\")\n        logging.info(f\"Found {len(mismatches)} discrepancies. Saved to: {args.output}\")\n    except Exception as exc:\n        logging.error(f\"Failed to write output file: {exc}\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed on your system.\n2. Install required dependencies:\n   pip install pandas\n\nHOW IT WORKS\nThe tool.py script performs an outer join between your physical stock scan and your POS or ERP inventory report using a common identifier column (SKU).\nIt calculates the variance (physical count minus system recorded count), isolates every SKU where the variance is non-zero, and outputs the discrepancy list to a clean CSV report.\n\nRunning tool.py:\npython tool.py --scan scan.csv --system system.csv --output mismatches.csv\n\nADAPTING IT\nIf your files use different column headers, pass them directly via arguments:\npython tool.py --scan warehouse_count.csv --system shopify_export.csv --sku-col \"Barcode\" --scan-col \"Qty Counted\" --system-col \"Available\"\n\nLIMITATIONS\n- Assumes unique SKUs per row within each source file. If your count file contains multiple scan entries per SKU, aggregate them before running or modify the script to sum duplicates.\n- Whitespace is stripped, but SKU values must otherwise match exactly (e.g. leading zeroes must be preserved by your spreadsheet editor).\n\nSUPPORT\nThis script is provided as-is without warranty. Community support and bug reports can be submitted through our GitHub repository.",
+  "product_name": "Inventory Discrepancy Reconciliation Tool",
+  "product_blurb": "Automatically compare physical count sheets against your store export to highlight stock variances instantly. Saves hours of manual spreadsheet auditing during stocktakes without requiring subscription software.",
+  "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)"
+}
