@@ -1,25 +1,25 @@
 {
-  "updated": "2026-11-11T03:39:21.508416+00:00",
-  "videos_scored": 31,
+  "updated": "2026-11-12T03:38:13.759301+00:00",
+  "videos_scored": 32,
   "pillar_weights": {
-    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.68,
-    "Rename, sort or clean up hundreds of files in one command": 1.12,
-    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.86,
-    "Build a formatted Excel report from raw data with pandas and openpyxl": 1.31,
-    "Automate a boring spreadsheet or CSV task with Python": 0.83,
-    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.84,
-    "Spot duplicates or errors in business data with a few lines of pandas": 0.6,
-    "Use an AI/LLM API call to classify, summarise or tag messy text": 0.42,
-    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.86,
-    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.53,
-    "Extract data from PDFs or text files you own with a short script": 2.52
+    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.6,
+    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.74,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.72,
+    "Spot duplicates or errors in business data with a few lines of pandas": 0.52,
+    "Build a formatted Excel report from raw data with pandas and openpyxl": 2.49,
+    "Use an AI/LLM API call to classify, summarise or tag messy text": 0.36,
+    "Extract data from PDFs or text files you own with a short script": 2.2,
+    "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.45,
+    "Rename, sort or clean up hundreds of files in one command": 0.96,
+    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.74,
+    "Automate a boring spreadsheet or CSV task with Python": 0.71
   },
   "top": [
     "Extract Invoice Totals from PDFs with 10 Lines of Python",
+    "Build Weekly Excel Reports with 10 Lines of Python",
     "Batch Rename and Clean Messy Files in Python",
     "Clean Inbox Newsletters with 9 Lines of Python",
-    "Format Raw CSV Data into Excel Reports with Python",
-    "Stop Using VLOOKUP: Reconcile Spreadsheets in Python"
+    "Format Raw CSV Data into Excel Reports with Python"
   ],
   "bottom": [
     "Parse Daily Sales Logs into CSV with 9 Lines of Python",

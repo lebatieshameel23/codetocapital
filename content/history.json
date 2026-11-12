@@ -47,7 +47,9 @@
     "2026-11-11T12:00:00+02:00": "5y9GkOHnKSo",
     "2026-11-11T18:00:00+02:00": "iCfTaYeGb1I",
     "2026-11-12T12:00:00+02:00": "XE2rroaRkow",
-    "2026-11-12T18:00:00+02:00": "LiiLoycZRlc"
+    "2026-11-12T18:00:00+02:00": "LiiLoycZRlc",
+    "2026-11-13T12:00:00+02:00": "TgExIzRi1Tg",
+    "2026-11-13T18:00:00+02:00": "gDH9Sj8apdQ"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -329,6 +331,20 @@
       "pillar": "Automate a boring spreadsheet or CSV task with Python",
       "ep": 40,
       "publishAt": "2026-11-12T16:00:00.000Z"
+    },
+    "TgExIzRi1Tg": {
+      "slug": "summarize-customer-feedback-fast-python",
+      "title": "Summarize Customer Feedback Fast with Python",
+      "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text",
+      "ep": 41,
+      "publishAt": "2026-11-13T10:00:00.000Z"
+    },
+    "gDH9Sj8apdQ": {
+      "slug": "lookup-zip-codes-python",
+      "title": "Lookup City and State from ZIP Codes in Python",
+      "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet",
+      "ep": 42,
+      "publishAt": "2026-11-13T16:00:00.000Z"
     }
   },
   "replied": []
