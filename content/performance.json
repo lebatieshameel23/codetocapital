@@ -1,22 +1,22 @@
 {
-  "updated": "2026-11-12T03:38:13.759301+00:00",
-  "videos_scored": 32,
+  "updated": "2026-11-13T03:38:05.905751+00:00",
+  "videos_scored": 34,
   "pillar_weights": {
-    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.6,
+    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.62,
     "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.74,
-    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.72,
-    "Spot duplicates or errors in business data with a few lines of pandas": 0.52,
-    "Build a formatted Excel report from raw data with pandas and openpyxl": 2.49,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.73,
+    "Spot duplicates or errors in business data with a few lines of pandas": 0.41,
+    "Build a formatted Excel report from raw data with pandas and openpyxl": 2.71,
     "Use an AI/LLM API call to classify, summarise or tag messy text": 0.36,
-    "Extract data from PDFs or text files you own with a short script": 2.2,
+    "Extract data from PDFs or text files you own with a short script": 2.21,
     "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.45,
-    "Rename, sort or clean up hundreds of files in one command": 0.96,
-    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.74,
-    "Automate a boring spreadsheet or CSV task with Python": 0.71
+    "Rename, sort or clean up hundreds of files in one command": 0.97,
+    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.75,
+    "Automate a boring spreadsheet or CSV task with Python": 0.8
   },
   "top": [
-    "Extract Invoice Totals from PDFs with 10 Lines of Python",
     "Build Weekly Excel Reports with 10 Lines of Python",
+    "Extract Invoice Totals from PDFs with 10 Lines of Python",
     "Batch Rename and Clean Messy Files in Python",
     "Clean Inbox Newsletters with 9 Lines of Python",
     "Format Raw CSV Data into Excel Reports with Python"
