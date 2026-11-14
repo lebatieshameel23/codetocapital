@@ -49,7 +49,9 @@
     "2026-11-12T12:00:00+02:00": "XE2rroaRkow",
     "2026-11-12T18:00:00+02:00": "LiiLoycZRlc",
     "2026-11-13T12:00:00+02:00": "TgExIzRi1Tg",
-    "2026-11-13T18:00:00+02:00": "gDH9Sj8apdQ"
+    "2026-11-13T18:00:00+02:00": "gDH9Sj8apdQ",
+    "2026-11-15T12:00:00+02:00": "cKhoUr33dkg",
+    "2026-11-15T18:00:00+02:00": "hIpLVHPYYIk"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -345,6 +347,20 @@
       "pillar": "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet",
       "ep": 42,
       "publishAt": "2026-11-13T16:00:00.000Z"
+    },
+    "cKhoUr33dkg": {
+      "slug": "flatten-subfolders-python",
+      "title": "Flatten Cluttered Subfolders in 10 Lines of Python",
+      "pillar": "Rename, sort or clean up hundreds of files in one command",
+      "ep": 43,
+      "publishAt": "2026-11-15T10:00:00.000Z"
+    },
+    "hIpLVHPYYIk": {
+      "slug": "flag-inventory-discrepancies-across-csvs-python",
+      "title": "Flag Inventory Discrepancies Across CSVs with Python",
+      "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)",
+      "ep": 44,
+      "publishAt": "2026-11-15T16:00:00.000Z"
     }
   },
   "replied": []
