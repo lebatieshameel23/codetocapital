@@ -51,7 +51,8 @@
     "2026-11-13T12:00:00+02:00": "TgExIzRi1Tg",
     "2026-11-13T18:00:00+02:00": "gDH9Sj8apdQ",
     "2026-11-15T12:00:00+02:00": "cKhoUr33dkg",
-    "2026-11-15T18:00:00+02:00": "hIpLVHPYYIk"
+    "2026-11-15T18:00:00+02:00": "hIpLVHPYYIk",
+    "2026-11-17T12:00:00+02:00": "AAbfVCHArME"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -361,6 +362,13 @@
       "pillar": "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)",
       "ep": 44,
       "publishAt": "2026-11-15T16:00:00.000Z"
+    },
+    "AAbfVCHArME": {
+      "slug": "format-sales-summaries-excel-python",
+      "title": "Format Sales Summaries in Excel with 10 Lines of Python",
+      "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl",
+      "ep": 45,
+      "publishAt": "2026-11-17T10:00:00.000Z"
     }
   },
   "replied": []

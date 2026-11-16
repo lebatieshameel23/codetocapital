@@ -1,0 +1,52 @@
+{
+  "slug": "format-sales-summaries-excel-python",
+  "title": "Format Sales Summaries in Excel with 10 Lines of Python",
+  "hook_text": "Most people do this by hand in Excel",
+  "description": "Stop manually rebuilding and formatting the same Excel summary table every week. This ten-line Python script aggregates raw revenue and applies currency formatting automatically.",
+  "tags": [
+    "python",
+    "excel automation",
+    "pandas",
+    "openpyxl",
+    "small business",
+    "productivity"
+  ],
+  "code": "import pandas as pd, openpyxl as ox\ndf = pd.read_csv(\"sales.csv\")\nrep = df.groupby(\"rep\")[\"rev\"].sum()\nrep.to_excel(\"summary.xlsx\", \"Sales\")\nwb = ox.load_workbook(\"summary.xlsx\")\nws = wb.active\nfor cell in ws[\"B\"][1:]:\n    cell.number_format = \"$#,##0\"\nwb.save(\"summary.xlsx\")\nprint(\"saved summary.xlsx\")",
+  "beats": [
+    {
+      "voice": "Most people do this by hand in Excel every week. Here is the ten-line version.",
+      "reveal": 3,
+      "badge": "Group & Sum",
+      "output": ""
+    },
+    {
+      "voice": "Read your raw transaction CSV, group by sales rep, and sum up total revenue.",
+      "reveal": 6,
+      "badge": "Export to Excel",
+      "output": ""
+    },
+    {
+      "voice": "Dump that clean summary into an Excel file, then load the sheet with openpyxl.",
+      "reveal": 8,
+      "badge": "Format Currency",
+      "output": ""
+    },
+    {
+      "voice": "Loop down the revenue column and apply standard dollar formatting to every row.",
+      "reveal": 10,
+      "badge": "Done",
+      "output": "saved summary.xlsx"
+    },
+    {
+      "voice": "Keep in mind it expects clean category names, but it replaces the manual grind where...",
+      "reveal": 10,
+      "badge": "Clean Data First",
+      "output": "saved summary.xlsx"
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py - Aggregate raw CSV data and export a styled Excel report.\n\"\"\"\n\nimport argparse\nimport logging\nfrom pathlib import Path\nimport pandas as pd\nimport openpyxl\nfrom openpyxl.styles import Font, PatternFill, Alignment\nfrom openpyxl.utils import get_column_letter\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(levelname)s: %(message)s\"\n)\n\n\ndef build_report(input_csv: Path, output_xlsx: Path, group_col: str, value_col: str, currency: bool) -> None:\n    if not input_csv.is_file():\n        raise FileNotFoundError(f\"Input file not found: {input_csv}\")\n\n    logging.info(\"Reading raw CSV: %s\", input_csv)\n    df = pd.read_csv(input_csv)\n\n    if group_col not in df.columns:\n        raise KeyError(f\"Grouping column '{group_col}' missing from CSV headers.\")\n    if value_col not in df.columns:\n        raise KeyError(f\"Value column '{value_col}' missing from CSV headers.\")\n\n    # Ensure numeric conversion\n    df[value_col] = pd.to_numeric(df[value_col], errors=\"coerce\").fillna(0.0)\n\n    # Group and aggregate\n    summary = df.groupby(group_col, as_index=False)[value_col].sum()\n    summary.sort_values(by=value_col, ascending=False, inplace=True)\n\n    # Add a grand total row\n    total_val = summary[value_col].sum()\n    total_row = pd.DataFrame([{group_col: \"Grand Total\", value_col: total_val}])\n    summary = pd.concat([summary, total_row], ignore_index=True)\n\n    output_xlsx.parent.mkdir(parents=True, exist_ok=True)\n    summary.to_excel(output_xlsx, index=False, sheet_name=\"Summary\")\n\n    # Post-process formatting with openpyxl\n    wb = openpyxl.load_workbook(output_xlsx)\n    ws = wb[\"Summary\"]\n\n    header_font = Font(name=\"Calibri\", size=11, bold=True, color=\"FFFFFF\")\n    header_fill = PatternFill(start_color=\"1F4E79\", end_color=\"1F4E79\", fill_type=\"solid\")\n    total_font = Font(name=\"Calibri\", size=11, bold=True)\n\n    # Style header row\n    for cell in ws[1]:\n        cell.font = header_font\n        cell.fill = header_fill\n        cell.alignment = Alignment(horizontal=\"left\" if cell.column == 1 else \"right\")\n\n    # Style data rows and total\n    max_row = ws.max_row\n    fmt_string = \"$#,##0.00\" if currency else \"#,##0.00\"\n\n    for row_idx in range(2, max_row + 1):\n        cell = ws.cell(row=row_idx, column=2)\n        cell.number_format = fmt_string\n        cell.alignment = Alignment(horizontal=\"right\")\n        if row_idx == max_row:\n            ws.cell(row=row_idx, column=1).font = total_font\n            cell.font = total_font\n\n    # Auto-fit column widths with padding\n    for col in ws.columns:\n        max_len = max(len(str(c.value or \"\")) for c in col)\n        col_letter = get_column_letter(col[0].column)\n        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)\n\n    wb.save(output_xlsx)\n    logging.info(\"Generated formatted report: %s (%d rows)\", output_xlsx, max_row - 1)\n\n\ndef main() -> None:\n    parser = argparse.ArgumentParser(\n        description=\"Aggregate raw CSV data and export a formatted Excel report.\"\n    )\n    parser.add_argument(\"--input\", \"-i\", type=Path, default=Path(\"sales.csv\"), help=\"Path to source CSV\")\n    parser.add_argument(\"--output\", \"-o\", type=Path, default=Path(\"summary.xlsx\"), help=\"Path for output Excel file\")\n    parser.add_argument(\"--group\", \"-g\", default=\"rep\", help=\"Column header to group by (e.g. rep, category)\")\n    parser.add_argument(\"--value\", \"-v\", default=\"rev\", help=\"Numeric column header to sum (e.g. rev, amount)\")\n    parser.add_argument(\"--no-currency\", action=\"store_true\", help=\"Omit currency symbol from numbers\")\n\n    args = parser.parse_args()\n\n    try:\n        build_report(\n            input_csv=args.input,\n            output_xlsx=args.output,\n            group_col=args.group,\n            value_col=args.value,\n            currency=not args.no_currency\n        )\n    except Exception as exc:\n        logging.error(\"Report generation failed: %s\", exc)\n        raise SystemExit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed.\n2. Install required packages:\n   pip install pandas openpyxl\n3. Place tool.py in your project directory.\n\nHOW IT WORKS\nRun the tool to process a raw transactional CSV into a polished Excel summary:\n   python tool.py --input sales.csv --output summary.xlsx --group rep --value rev\n\nThe script performs the following:\n1. Reads and validates headers from your source CSV.\n2. Safely parses numeric data, coercing blank or invalid entries to 0.0.\n3. Groups records by the chosen category and calculates totals in descending order.\n4. Appends a styled 'Grand Total' row.\n5. Applies Excel styling: dark blue header row, bold text, auto-adjusted column widths, and proper currency number formatting.\n\nADAPTING IT\n- Change default column names via flags: --group \"Department\" --value \"Expenses\"\n- Disable currency symbols for unit counts using --no-currency.\n- Adjust header colors by editing 'header_fill' hex values in build_report().\n\nLIMITATIONS\n- The script aggregates a single numeric column against one grouping dimension.\n- Group keys are case-sensitive; inconsistent spelling in raw data will result in separate summary rows.\n\nSUPPORT\nProvided as-is without warranty. Community support available via GitHub issues.",
+  "product_name": "CSV to Styled Excel Summary Generator",
+  "product_blurb": "Turn messy transactional CSV logs into executive-ready Excel reports in seconds. Automates grouping, sorting, grand totals, and professional currency formatting with zero manual spreadsheet work.",
+  "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl"
+}
