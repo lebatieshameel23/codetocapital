@@ -1,0 +1,52 @@
+{
+  "slug": "extract-action-items-from-meeting-notes-python",
+  "title": "Extract Action Items from Meeting Notes with Python",
+  "hook_text": "Extract action items in one command",
+  "description": "Turn raw meeting transcripts and notes into structured action items using a lightweight Python script and a local LLM. Save manual triage time every week without sending sensitive business discussions to third-party cloud servers.",
+  "tags": [
+    "python",
+    "automation",
+    "localllm",
+    "productivity",
+    "meetingnotes",
+    "ollama"
+  ],
+  "code": "import requests\nurl = \"http://localhost:11434/api/generate\"\nnotes = open(\"notes.txt\").read()\ndata = {\n    \"model\": \"llama3.2\",\n    \"prompt\": f\"Extract tasks:\\n{notes}\",\n    \"stream\": False,\n}\nout = requests.post(url, json=data).json()\nprint(out[\"response\"].strip())",
+  "beats": [
+    {
+      "voice": "This task eats an hour every Friday. Here's how to make it a single command.",
+      "reveal": 3,
+      "badge": "Automate Triage",
+      "output": ""
+    },
+    {
+      "voice": "Point Python to your raw meeting notes and post them to your local Ollama endpoint.",
+      "reveal": 5,
+      "badge": "Local LLM Call",
+      "output": ""
+    },
+    {
+      "voice": "Pass the notes inside a prompt asking specifically for assigned action items with streaming disabled.",
+      "reveal": 8,
+      "badge": "Payload Setup",
+      "output": ""
+    },
+    {
+      "voice": "Run the script, and your terminal instantly prints every owner and deliverable extracted cleanly.",
+      "reveal": 10,
+      "badge": "Clean Action Items",
+      "output": "- Sarah: Send Q3 budget review by Mon"
+    },
+    {
+      "voice": "Local models do require free memory, but running this beats parsing transcripts by hand whenever...",
+      "reveal": 10,
+      "badge": "RAM Requirement",
+      "output": ""
+    }
+  ],
+  "kit_code": "#!/usr/bin/env python3\n\"\"\"\ntool.py: Extract action items and assignees from raw meeting notes\nusing a local Ollama instance or compatible HTTP completion endpoint.\n\"\"\"\n\nimport argparse\nimport logging\nimport sys\nfrom pathlib import Path\nimport requests\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%H:%M:%S\",\n)\n\n\ndef build_prompt(notes: str) -> str:\n    return (\n        \"You are an executive assistant. Extract all action items, owners, \"\n        \"and due dates from the following meeting transcript. Format each item \"\n        \"as a concise bullet point: '- [Owner]: [Task] (Due: [Date or N/A])'. \"\n        \"If no owner is mentioned, write 'Unassigned'. Output only the bullet \"\n        \"points and nothing else.\\n\\n\"\n        f\"Transcript:\\n{notes}\"\n    )\n\n\ndef extract_actions(notes_text: str, endpoint: str, model: str, timeout: int) -> str:\n    payload = {\n        \"model\": model,\n        \"prompt\": build_prompt(notes_text),\n        \"stream\": False,\n    }\n    try:\n        res = requests.post(f\"{endpoint.rstrip('/')}/api/generate\", json=payload, timeout=timeout)\n        res.raise_for_status()\n        data = res.json()\n        return data.get(\"response\", \"\").strip()\n    except requests.exceptions.ConnectionError:\n        logging.error(\"Could not reach Ollama at %s. Ensure the service is running.\", endpoint)\n        sys.exit(1)\n    except requests.exceptions.Timeout:\n        logging.error(\"Request timed out after %d seconds. Try a smaller input or faster model.\", timeout)\n        sys.exit(1)\n    except requests.exceptions.RequestException as err:\n        logging.error(\"API request failed: %s\", err)\n        sys.exit(1)\n\n\ndef main():\n    parser = argparse.ArgumentParser(description=\"Extract action items from meeting notes via local LLM.\")\n    parser.add_argument(\"input_file\", type=Path, help=\"Path to the text file containing meeting notes.\")\n    parser.add_argument(\"-o\", \"--output\", type=Path, default=None, help=\"Optional path to save extracted items.\")\n    parser.add_argument(\"--model\", default=\"llama3.2\", help=\"Ollama model name (default: llama3.2).\")\n    parser.add_argument(\"--endpoint\", default=\"http://localhost:11434\", help=\"Ollama server URL.\")\n    parser.add_argument(\"--timeout\", type=int, default=120, help=\"Request timeout in seconds (default: 120).\")\n    parser.add_argument(\"--dry-run\", action=\"store_true\", help=\"Print prompt character count and exit without calling API.\")\n    args = parser.parse_args()\n\n    if not args.input_file.is_file():\n        logging.error(\"Input file not found: %s\", args.input_file)\n        sys.exit(1)\n\n    try:\n        notes = args.input_file.read_text(encoding=\"utf-8\").strip()\n    except Exception as err:\n        logging.error(\"Failed reading input file: %s\", err)\n        sys.exit(1)\n\n    if not notes:\n        logging.warning(\"Input file is empty. Nothing to process.\")\n        return\n\n    if args.dry_run:\n        logging.info(\"Dry-run active: %d characters read from %s\", len(notes), args.input_file)\n        logging.info(\"Target model: %s at %s\", args.model, args.endpoint)\n        return\n\n    logging.info(\"Processing '%s' using model '%s'...\", args.input_file, args.model)\n    result = extract_actions(notes, args.endpoint, args.model, args.timeout)\n\n    if not result:\n        logging.warning(\"Model returned an empty response.\")\n        return\n\n    print(\"\\n--- Extracted Action Items ---\\n\")\n    print(result)\n    print(\"\\n------------------------------\\n\")\n\n    if args.output:\n        try:\n            args.output.write_text(result + \"\\n\", encoding=\"utf-8\")\n            logging.info(\"Wrote extracted items to '%s'\", args.output)\n        except Exception as err:\n            logging.error(\"Failed writing output file: %s\", err)\n            sys.exit(1)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.9+ is installed.\n2. Install required packages:\n   pip install requests\n3. Download and start Ollama from https://ollama.com\n4. Pull your desired model (e.g. llama3.2):\n   ollama run llama3.2\n\nHOW IT WORKS\ntool.py reads raw text from a meeting transcript or call log file, builds a structured prompt instructing the model to pull out assignees and deadlines, and posts the payload to Ollama's local generation endpoint. The response is displayed on stdout and optionally saved directly into a markdown or text file.\n\nUsage:\n  python tool.py meeting.txt\n  python tool.py meeting.txt --output tasks.md\n  python tool.py meeting.txt --model mistral --timeout 180\n  python tool.py meeting.txt --dry-run\n\nADAPTING IT\n- Custom prompts: Modify build_prompt() in tool.py to extract decisions, questions, or attendee summaries instead of tasks.\n- Cloud endpoints: You can update the request payload and headers to point to OpenAI-compatible endpoints by modifying extract_actions().\n- Bulk processing: Wrap main() logic in a simple shell loop or Python glob to process an entire folder of weekly meeting transcripts.\n\nLIMITATIONS\nLocal processing speed depends entirely on your machine's CPU/GPU and available system RAM. Extremely long transcripts exceeding the model context window may result in truncated responses or missed action items unless chunked.\n\nSUPPORT\nProvided as-is for educational and productivity automation purposes without warranty of any kind.",
+  "product_name": "Meeting Action Item Extractor",
+  "product_blurb": "Convert messy meeting transcripts into clean, assigned action lists using Python and your local LLM. Keep private company discussions fully on-premise without recurring third-party API subscription costs.",
+  "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text"
+}

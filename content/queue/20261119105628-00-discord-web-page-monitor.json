@@ -1,0 +1,52 @@
+{
+  "slug": "discord-web-page-monitor",
+  "title": "Track Web Page Changes to Discord with 10 Lines of Python",
+  "hook_text": "Stop paying someone to check prices",
+  "description": "Monitor public vendor pricing or rate pages and post instant alerts to Discord using Python. Includes a production-ready CLI kit with hash caching, custom headers, and dry-run testing.",
+  "tags": [
+    "python",
+    "automation",
+    "discord",
+    "webscraping",
+    "devops",
+    "smallbusiness"
+  ],
+  "code": "import pathlib, requests\nu = 'https://example.com/rates'\nhook = 'https://discord.com/webhook'\npage = requests.get(u).text\np = pathlib.Path('cache.txt')\nold = p.read_text() if p.exists() else ''\nif page != old:\n    requests.post(hook, json={'content': u})\n    p.write_text(page)\n    print('Alert sent: page updated')",
+  "beats": [
+    {
+      "voice": "Say you pay someone $250 a month to check a vendor page for price updates. That is $3,000 a year for hitting refresh.",
+      "reveal": 3,
+      "badge": "$3,000 / year manual cost",
+      "output": ""
+    },
+    {
+      "voice": "Fetch the target page with requests, then load your saved snapshot using pathlib.",
+      "reveal": 6,
+      "badge": "Load snapshot",
+      "output": ""
+    },
+    {
+      "voice": "If the content changed, ping your Discord webhook immediately and write the new text.",
+      "reveal": 9,
+      "badge": "Compare and post",
+      "output": ""
+    },
+    {
+      "voice": "Run this on a cron job, and your team gets notified within seconds.",
+      "reveal": 10,
+      "badge": "Instant alert",
+      "output": "Alert sent: page updated"
+    },
+    {
+      "voice": "Dynamic timestamps can cause false alerts on unparsed pages, but that beats manual payroll...",
+      "reveal": 10,
+      "badge": "Automated check",
+      "output": ""
+    }
+  ],
+  "kit_code": "\"\"\"tool.py - Automated web page change detector with Discord webhook alerts.\n\nMonitors a permitted web page or endpoint, compares content against a local\nhash cache, and alerts a Discord channel when changes are detected.\n\"\"\"\n\nimport argparse\nimport hashlib\nimport logging\nimport os\nimport sys\nimport requests\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s [%(levelname)s] %(message)s\",\n    datefmt=\"%Y-%m-%d %H:%M:%S\",\n)\n\n\ndef fetch_page(url: str, user_agent: str, timeout: int) -> str:\n    headers = {\"User-Agent\": user_agent}\n    try:\n        response = requests.get(url, headers=headers, timeout=timeout)\n        response.raise_for_status()\n        return response.text\n    except requests.RequestException as exc:\n        logging.error(\"Failed to fetch %s: %s\", url, exc)\n        raise\n\n\ndef load_cached_hash(cache_path: str) -> str:\n    if os.path.exists(cache_path):\n        try:\n            with open(cache_path, \"r\", encoding=\"utf-8\") as handle:\n                return handle.read().strip()\n        except OSError as exc:\n            logging.warning(\"Could not read cache file %s: %s\", cache_path, exc)\n    return \"\"\n\n\ndef save_cached_hash(cache_path: str, content_hash: str) -> None:\n    try:\n        with open(cache_path, \"w\", encoding=\"utf-8\") as handle:\n            handle.write(content_hash)\n    except OSError as exc:\n        logging.error(\"Failed to write cache file %s: %s\", cache_path, exc)\n\n\ndef send_discord_alert(webhook_url: str, message: str, timeout: int) -> bool:\n    payload = {\"content\": message}\n    try:\n        response = requests.post(webhook_url, json=payload, timeout=timeout)\n        response.raise_for_status()\n        logging.info(\"Discord alert posted successfully.\")\n        return True\n    except requests.RequestException as exc:\n        logging.error(\"Failed to post alert to Discord: %s\", exc)\n        return False\n\n\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Monitor permitted web pages and send Discord alerts on change.\"\n    )\n    parser.add_argument(\"--url\", required=True, help=\"URL to monitor\")\n    parser.add_argument(\n        \"--webhook-url\",\n        default=os.environ.get(\"DISCORD_WEBHOOK_URL\"),\n        help=\"Discord incoming webhook URL (or set DISCORD_WEBHOOK_URL env var)\",\n    )\n    parser.add_argument(\n        \"--cache-file\",\n        default=\".page_hash.txt\",\n        help=\"Path to hash cache file (default: .page_hash.txt)\",\n    )\n    parser.add_argument(\n        \"--user-agent\",\n        default=\"CodeToCapital-Monitor/1.0\",\n        help=\"Custom User-Agent header string\",\n    )\n    parser.add_argument(\n        \"--timeout\",\n        type=int,\n        default=15,\n        help=\"Request timeout in seconds (default: 15)\",\n    )\n    parser.add_argument(\n        \"--dry-run\",\n        action=\"store_true\",\n        help=\"Check page and report status without sending Discord webhook\",\n    )\n    return parser.parse_args()\n\n\ndef main() -> int:\n    args = parse_args()\n\n    if not args.dry_run and not args.webhook_url:\n        logging.error(\"Missing Discord webhook URL. Provide --webhook-url or set DISCORD_WEBHOOK_URL.\")\n        return 1\n\n    logging.info(\"Checking %s ...\", args.url)\n    try:\n        html_content = fetch_page(args.url, args.user_agent, args.timeout)\n    except Exception:\n        return 2\n\n    current_hash = hashlib.sha256(html_content.encode(\"utf-8\")).hexdigest()\n    previous_hash = load_cached_hash(args.cache_file)\n\n    if not previous_hash:\n        logging.info(\"No baseline cache found. Saving initial snapshot.\")\n        save_cached_hash(args.cache_file, current_hash)\n        if not args.dry_run:\n            msg = f\":information_source: Monitoring started for: {args.url}\"\n            send_discord_alert(args.webhook_url, msg, args.timeout)\n        return 0\n\n    if current_hash != previous_hash:\n        logging.info(\"Page change detected! Old: %s..., New: %s...\", previous_hash[:8], current_hash[:8])\n        if args.dry_run:\n            logging.info(\"[DRY RUN] Would send alert to Discord for: %s\", args.url)\n        else:\n            msg = f\":bell: **Change Detected!** Page updated: {args.url}\"\n            if send_discord_alert(args.webhook_url, msg, args.timeout):\n                save_cached_hash(args.cache_file, current_hash)\n    else:\n        logging.info(\"No change detected on %s.\", args.url)\n\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main())\n",
+  "kit_readme": "SETUP\n1. Ensure Python 3.8+ is installed.\n2. Install required package:\n   pip install requests\n3. Obtain an incoming webhook URL from your Discord channel (Channel Settings > Integrations > Webhooks).\n\nHOW IT WORKS\ntool.py fetches the specified web page using a custom User-Agent, computes a SHA-256 hash of the content, and compares it against a local cache file (.page_hash.txt by default).\n\nIf the page is being checked for the first time, it stores the initial hash baseline and sends a setup confirmation. On subsequent runs, if the hash shifts, it dispatches an instant notification to your Discord webhook and updates the stored hash.\n\nRunning tool.py:\npython tool.py --url \"https://example.com/pricing\" --webhook-url \"https://discord.com/api/webhooks/...\"\n\nTest safely with dry-run mode:\npython tool.py --url \"https://example.com/pricing\" --dry-run\n\nADAPTING IT\n- Schedule tool.py via cron (Linux/macOS) or Windows Task Scheduler to run every 15 or 60 minutes.\n- Store the webhook in your environment: export DISCORD_WEBHOOK_URL=\"https://discord.com/api/webhooks/...\" so you do not pass it in plain text.\n- For pages with dynamic timestamps or ads, strip non-content blocks before hashing by integrating BeautifulSoup or regex filters.\n\nLIMITATIONS\ntool.py hashes the entire raw page response. Pages containing constantly changing elements (such as dynamic CSRF tokens, rotating banners, or timestamps) will trigger notifications on every run unless filtered.\n\nSUPPORT\nThis software is provided as-is without warranty of any kind. Monitor only public pages or internal services you have explicit permission to track.",
+  "product_name": "Discord Web Page Monitor Kit",
+  "product_blurb": "Automatically monitor public web pages and receive real-time Discord notifications whenever content changes. Includes a robust CLI tool featuring SHA-256 state tracking, dry-run testing, and error handling.",
+  "pillar": "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes"
+}

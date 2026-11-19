@@ -1,18 +1,18 @@
 {
-  "updated": "2026-11-18T10:48:56.251184+00:00",
-  "videos_scored": 43,
+  "updated": "2026-11-19T10:51:15.685530+00:00",
+  "videos_scored": 44,
   "pillar_weights": {
-    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.71,
-    "Automate a boring spreadsheet or CSV task with Python": 1.15,
-    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.73,
-    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.6,
-    "Spot duplicates or errors in business data with a few lines of pandas": 0.41,
-    "Build a formatted Excel report from raw data with pandas and openpyxl": 2.54,
-    "Use an AI/LLM API call to classify, summarise or tag messy text": 0.5,
-    "Extract data from PDFs or text files you own with a short script": 1.73,
+    "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.74,
+    "Automate a boring spreadsheet or CSV task with Python": 1.18,
+    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.74,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.61,
+    "Spot duplicates or errors in business data with a few lines of pandas": 0.42,
+    "Build a formatted Excel report from raw data with pandas and openpyxl": 2.59,
+    "Use an AI/LLM API call to classify, summarise or tag messy text": 0.51,
+    "Extract data from PDFs or text files you own with a short script": 1.77,
     "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.45,
-    "Rename, sort or clean up hundreds of files in one command": 1.06,
-    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.64
+    "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.56,
+    "Rename, sort or clean up hundreds of files in one command": 1.07
   },
   "top": [
     "Build Weekly Excel Reports with 10 Lines of Python",
