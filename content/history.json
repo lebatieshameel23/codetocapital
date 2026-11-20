@@ -52,7 +52,9 @@
     "2026-11-13T18:00:00+02:00": "gDH9Sj8apdQ",
     "2026-11-15T12:00:00+02:00": "cKhoUr33dkg",
     "2026-11-15T18:00:00+02:00": "hIpLVHPYYIk",
-    "2026-11-17T12:00:00+02:00": "AAbfVCHArME"
+    "2026-11-17T12:00:00+02:00": "AAbfVCHArME",
+    "2026-11-21T12:00:00+02:00": "GvtGusS68sQ",
+    "2026-11-21T18:00:00+02:00": "jxQAMEiL3cQ"
   },
   "videos": {
     "VYOCdjHthI0": {
@@ -369,6 +371,20 @@
       "pillar": "Build a formatted Excel report from raw data with pandas and openpyxl",
       "ep": 45,
       "publishAt": "2026-11-17T10:00:00.000Z"
+    },
+    "GvtGusS68sQ": {
+      "slug": "discord-web-page-monitor",
+      "title": "Track Web Page Changes to Discord with 10 Lines of Python",
+      "pillar": "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes",
+      "ep": 46,
+      "publishAt": "2026-11-21T10:00:00.000Z"
+    },
+    "jxQAMEiL3cQ": {
+      "slug": "extract-action-items-from-meeting-notes-python",
+      "title": "Extract Action Items from Meeting Notes with Python",
+      "pillar": "Use an AI/LLM API call to classify, summarise or tag messy text",
+      "ep": 47,
+      "publishAt": "2026-11-21T16:00:00.000Z"
     }
   },
   "replied": []
