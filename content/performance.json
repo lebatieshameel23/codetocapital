@@ -1,18 +1,18 @@
 {
-  "updated": "2026-11-20T10:38:58.400278+00:00",
+  "updated": "2026-11-21T10:21:20.550822+00:00",
   "videos_scored": 45,
   "pillar_weights": {
     "Pull public data from official free APIs (exchange rates, weather, open data) into a sheet": 0.7,
-    "Automate a boring spreadsheet or CSV task with Python": 1.12,
-    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.71,
-    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.58,
+    "Automate a boring spreadsheet or CSV task with Python": 1.11,
+    "Tidy your own inbox safely: find newsletters and archive them, with a dry-run mode first": 0.7,
+    "Schedule a script to run by itself (cron, Task Scheduler, GitHub Actions)": 0.57,
     "Spot duplicates or errors in business data with a few lines of pandas": 0.4,
-    "Build a formatted Excel report from raw data with pandas and openpyxl": 2.61,
+    "Build a formatted Excel report from raw data with pandas and openpyxl": 2.63,
     "Use an AI/LLM API call to classify, summarise or tag messy text": 0.48,
-    "Extract data from PDFs or text files you own with a short script": 1.66,
+    "Extract data from PDFs or text files you own with a short script": 1.67,
     "Get an alert (Discord, Telegram or email) when a file or a page you are allowed to monitor changes": 0.43,
     "Reconcile or merge two spreadsheets with pandas (a VLOOKUP replacement)": 0.54,
-    "Rename, sort or clean up hundreds of files in one command": 1.02
+    "Rename, sort or clean up hundreds of files in one command": 1.01
   },
   "top": [
     "Build Weekly Excel Reports with 10 Lines of Python",
